@@ -1,0 +1,68 @@
+version: '3.4'
+
+
+#-Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000"
+
+services:
+    
+    # messaging:
+    #     image: confluentinc/cp-kafka:latest
+    #     networks:
+    #         BT-network:
+    #             aliases:
+    #             - "messanging"
+    crypto:
+        container_name: crypto
+        image: 'maven:3.8.1-openjdk-17-slim'
+        #entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--file_database=/service/src/main/resources/Ethereum.csv --output_trade=/service/src/main/resources/out_trade_ethereum.csv --file_database_stock=BTC --file_database_stock_initialdate=2020-05-01T00:00:00 --file_database_stock_finaldate=2021-05-01T23:59:59 " -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--stock=BTCUSDC --outputSeries=/service/src/main/resources/BTCUSDC_series.csv --outputTrade=/service/src/main/resources/BTCUSDC_trades.csvbinancebinance" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--stock=BTCUSDC --outputSeries=/service/src/main/resources/BTCUSDC_series.csv --outputTrade=/service/src/main/resources/BTCUSDC_trades.csv --dataBase=/service/src/main/resources/Ethereum.csv" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        # entrypoint: 'mvn compile'
+        # entrypoint: 'mvn -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005" test'
+        entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        volumes:
+            - ./crypto:/service/
+            - $HOME/.m2:/root/.m2
+        working_dir: '/service'
+        ports:
+            - "8000:8000"
+            - "8080:8080"
+            - "5005:5005"
+        networks:
+            BT-network:
+                aliases:
+                - "crypto"
+    
+    # api:
+    #     container_name: api
+    #     entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+    #     volumes:
+    #         - ./crypto:/api/
+    #         - $HOME/.m2:/root/.m2
+    #     working_dir: '/api'
+    #     ports:
+    #         - "8000:8001"
+    #         - "8080:8080"
+    #     networks:
+    #         BT-network:
+    #             aliases:
+    #             - "api"
+
+    # client:
+    #     container_name: client
+    #     image: 'bt_client'
+    #     working_dir: '/app'
+    #     entrypoint: 'npm run web'
+    #     volumes:
+    #         - ./client/bt_client:/app
+    #     ports:
+    #         - "19006:19006"
+    #     networks:
+    #         BT-network:
+    #             aliases:
+    #             - "cient"
+
+networks:
+    BT-network:
+        driver: bridge
