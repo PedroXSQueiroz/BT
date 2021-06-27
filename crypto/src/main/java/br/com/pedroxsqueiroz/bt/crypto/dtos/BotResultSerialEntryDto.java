@@ -4,17 +4,17 @@ import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import lombok.Data;
 
 @Data
-public class BackTestSerialEntryDto extends SerialEntry{
+public class BotResultSerialEntryDto extends SerialEntry{
 
     private Double ammount;
 
     private TradeMovementTypeEnum tradeMovementType;
 
-    public BackTestSerialEntryDto()
+    public BotResultSerialEntryDto()
     {
     }
 
-    public BackTestSerialEntryDto(SerialEntry serialEntry )
+    public BotResultSerialEntryDto(SerialEntry serialEntry )
     {
         this.setOpening(serialEntry.getOpening());
         this.setClosing(serialEntry.getClosing());
@@ -25,7 +25,7 @@ public class BackTestSerialEntryDto extends SerialEntry{
         this.setVolume(serialEntry.getVolume());
     }
 
-    public BackTestSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )
+    public BotResultSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )
     {
         this(serialEntry);
 

@@ -1,6 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
+import br.com.pedroxsqueiroz.bt.crypto.exceptions.ConfigParamNotFoundException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ParamConverter;
@@ -34,13 +35,13 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
 
         String algorithmName = source.getName();
 
-        R algorithm = (R) this.context.getBean(algorithmName, this.getConfigurableClass());
+        R configBean = (R) this.context.getBean(algorithmName, this.getConfigurableClass());
 
-        Map<String, Object> resolvedParams = this.paramsUtils.extractConfigParamRawValuesMap(source.getParams(), algorithm);
+        Map<String, Object> resolvedParams = this.paramsUtils.extractConfigParamRawValuesMap(source.getParams(), configBean);
 
-        algorithm.config(resolvedParams);
+        configBean.config(resolvedParams);
 
-        return algorithm;
+        return configBean;
     }
 
     @Override
@@ -51,5 +52,16 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
     @Override
     public Class<R> convertTo() {
         return (Class<R>) this.getConfigurableClass();
+    }
+
+    private Configurable parent;
+
+    public void setParent( Configurable parent )
+    {
+        this.parent = parent;
+    }
+
+    public <R1> R1 getFromParent( String propertyFromSource ) throws IllegalAccessException, ConfigParamNotFoundException {
+        return (R1) this.parent.getConfigParamValue(propertyFromSource);
     }
 }

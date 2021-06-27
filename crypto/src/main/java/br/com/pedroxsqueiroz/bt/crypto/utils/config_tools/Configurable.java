@@ -1,5 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 
+import br.com.pedroxsqueiroz.bt.crypto.exceptions.ConfigParamNotFoundException;
+
 import java.util.Map;
 
 public interface Configurable {
@@ -10,4 +12,5 @@ public interface Configurable {
 
     boolean isConfigured();
 
+    Object getConfigParamValue(String propertyFromSource) throws IllegalAccessException, ConfigParamNotFoundException;
 }

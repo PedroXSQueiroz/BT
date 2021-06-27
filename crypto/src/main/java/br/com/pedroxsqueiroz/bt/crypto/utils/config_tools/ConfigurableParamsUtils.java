@@ -2,6 +2,7 @@ package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
+import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ParamsToConfigurableInstanceConverter;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.jetbrains.annotations.NotNull;
@@ -63,7 +64,8 @@ public class ConfigurableParamsUtils {
                     Object paramResolved = resolveParam(
                             paramsToFields.get(currentConfigParamName),
                             paramType,
-                            rawValue);
+                            rawValue,
+                            configurable);
 
                     return new AbstractMap.SimpleEntry<>(currentConfigParamName, paramResolved);
 
@@ -84,7 +86,11 @@ public class ConfigurableParamsUtils {
 
     Set<ParamConverter> convertersBeans;
 
-    private Object resolveParam(Field paramField, Class<?> paramType, Object rawValue) {
+    private Object resolveParam(
+            Field paramField,
+            Class<?> paramType,
+            Object rawValue,
+            Configurable configurable) {
 
         List<? extends ParamConverter> compatibleConverters = getCompatibleConverters(paramField, rawValue);
 
@@ -102,6 +108,12 @@ public class ConfigurableParamsUtils {
         }
 
         ParamConverter converter = compatibleConverters.get(0);
+
+        if( ParamsToConfigurableInstanceConverter.class.isAssignableFrom( converter.getClass() ) )
+        {
+            ParamsToConfigurableInstanceConverter configurableConverter = (ParamsToConfigurableInstanceConverter) converter;
+            configurableConverter.setParent(configurable);
+        }
 
         return converter.convert(rawValue);
 

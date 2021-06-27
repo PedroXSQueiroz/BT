@@ -64,7 +64,7 @@ public class BinanceSeriesService implements SeriesService {
     @Value("${binance.binanceSocketUrlRoot}")
     private String binanceSocketUrlRoot;
 
-    @Scheduled( cron = "${binance.updateSeriesScheduled}")
+    //@Scheduled( cron = "${binance.updateSeriesScheduled}")
     private void updateSeries() throws URISyntaxException, CloneNotSupportedException, IOException {
 
         HttpClients.createDefault().execute(

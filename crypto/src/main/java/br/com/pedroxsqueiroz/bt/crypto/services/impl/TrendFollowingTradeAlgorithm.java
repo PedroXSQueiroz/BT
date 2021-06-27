@@ -1,6 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.services.impl;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.services.AbstractTA4JTradeAlgorihtm;

@@ -13,9 +13,14 @@ import java.util.List;
 
 public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
-    @ConfigParamConverter(converters = StringToStockTypeConverter.class)
-    @ConfigParam(name ="stockType")
-    public StockType stockType;
+    //@ConfigParamConverter(converters = StringToStockTypeConverter.class)
+    //@ConfigParam(name ="stockType")
+    protected StockType stockType;
+
+    public void setStockType(StockType type)
+    {
+        this.stockType = type;
+    }
 
     protected BaseBarSeries barSeries;
 
@@ -26,7 +31,6 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
         List<SerialEntry> series    = this.fetchNextSeriesEntry(this.stockType);
         addEntriesToSeries(series);
-
     }
 
     protected void addEntriesToSeries(List<SerialEntry> series) {
