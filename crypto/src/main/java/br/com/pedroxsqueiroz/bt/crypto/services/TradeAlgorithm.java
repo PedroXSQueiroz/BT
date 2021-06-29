@@ -14,7 +14,7 @@ import lombok.experimental.Delegate;
 
 import java.util.List;
 
-public abstract class TradeAlgorithm implements Configurable, Startable, Stopable, Finishable {
+public abstract class TradeAlgorithm extends Configurable implements Startable, Stopable, Finishable {
 
     /*-----------------------------------------------------------------------------------------
     MARKET ADAPTERS

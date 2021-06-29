@@ -11,18 +11,18 @@ import java.io.Closeable;
 import java.time.Instant;
 import java.util.List;
 
-public interface MarketFacade extends Configurable, Startable, Finishable {
+public abstract class MarketFacade extends Configurable implements Startable, Finishable {
 
-    List<StockType> getSupportedStocks();
+    public abstract List<StockType> getSupportedStocks();
 
-    List<SerialEntry> fetch(StockType type, Instant from, Instant to );
+    public abstract List<SerialEntry> fetch(StockType type, Instant from, Instant to );
 
-    List<SerialEntry> fetchNext(StockType type);
+    public abstract List<SerialEntry> fetchNext(StockType type);
 
-    TradePosition entryPosition(Double ammount, StockType type);
+    public abstract TradePosition entryPosition(Double ammount, StockType type);
 
-    TradePosition exitPosition(TradePosition position, Double ammount, StockType type);
+    public abstract TradePosition exitPosition(TradePosition position, Double ammount, StockType type);
 
-    Double exchangeValueRate( StockType type );
+    public abstract Double exchangeValueRate( StockType type );
 
 }

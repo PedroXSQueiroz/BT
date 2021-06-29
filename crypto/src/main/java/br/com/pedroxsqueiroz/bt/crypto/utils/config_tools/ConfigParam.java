@@ -10,6 +10,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD})
 public @interface ConfigParam {
 
-    public String name();
+    String name();
+
+    int priority() default 0;
+
+    boolean getFromParent() default false;
 
 }

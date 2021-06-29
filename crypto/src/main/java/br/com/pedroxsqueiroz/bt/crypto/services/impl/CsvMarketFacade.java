@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.*;
 
 @Component("csv")
-public class CsvMarketFacade implements MarketFacade {
+public class CsvMarketFacade extends MarketFacade {
 
     @ConfigParamConverter(converters = {PathStringToInpuStreamParamConverter.class})
     @ConfigParam(name = "source")

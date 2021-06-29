@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 
 @Configuration
 @Component("binance")
-public class BinanceMarketFacade implements MarketFacade {
+public class BinanceMarketFacade extends MarketFacade {
 
     BlockingQueue<SerialEntry> serialEntries;
 
@@ -51,11 +51,12 @@ public class BinanceMarketFacade implements MarketFacade {
     @Qualifier("binanceRequestFactory")
     private RequestFactory requestFactory;
 
-    @ConfigParam(name = "stockType")
-    private String currentStockType;
+    @ConfigParam(name = "stockType", getFromParent = true)
+    public StockType currentStockType;
+
 
     @ConfigParam(name = "fecthStockInterval" )
-    private Integer interval;
+    public Integer interval;
 
     ScheduledFuture scheduled;
 
@@ -194,7 +195,7 @@ public class BinanceMarketFacade implements MarketFacade {
                 HttpClients.createDefault().execute(
                         this.requestFactory
                                 .withRequestParams("interval", this.interval.toString())
-                                .withRequestParams("symbol",this.currentStockType)
+                                .withRequestParams("symbol",this.currentStockType.getName())
                                 .withRequestParams("limit","1")
                                 .setup("GET", "klines")
                                 .build(),

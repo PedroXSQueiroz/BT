@@ -20,12 +20,13 @@ public class ConfigurableParamsUtils {
 
     @NotNull
     private Map<String, Field> getParamsToFields(Class<? extends Configurable> configurableClass) {
-        Map<String, Field> paramsToFields = FieldUtils.getFieldsListWithAnnotation(configurableClass, ConfigParam.class)
-                .stream()
-                .collect(Collectors.toMap(
-                        annotatedField -> annotatedField.getAnnotation(ConfigParam.class).name(),
-                        annotatedField -> annotatedField
-                ));
+        Map<String, Field> paramsToFields = FieldUtils
+                                                .getFieldsListWithAnnotation(configurableClass, ConfigParam.class)
+                                                .stream()
+                                                .collect(Collectors.toMap(
+                                                        annotatedField -> annotatedField.getAnnotation(ConfigParam.class).name(),
+                                                        annotatedField -> annotatedField
+                                                ));
         return paramsToFields;
     }
 
@@ -77,6 +78,29 @@ public class ConfigurableParamsUtils {
 
     }
 
+    public void resolveConfigurableTree(Configurable configurable, Map<String, Object> paramsWithConfigurables)
+    {
+
+        FieldUtils
+                .getFieldsListWithAnnotation( configurable.getClass(), ConfigParam.class )
+                .stream()
+                .filter( field -> Configurable.class.isAssignableFrom( field.getType() ) )
+                .forEach( field -> {
+
+                    String name = field.getAnnotation(ConfigParam.class).name();
+
+                    Configurable innerConfigurable = (Configurable) paramsWithConfigurables.get(name);
+
+                    if( Objects.nonNull( innerConfigurable ) )
+                    {
+                        innerConfigurable.setParent(configurable);
+                        resolveConfigurableTree( configurable, innerConfigurable.getCurrentConfiguration() );
+                    }
+
+
+                });
+
+    }
 
     @Autowired(required = false)
     public void setConvertersBeans(Set<ParamConverter> convertersBeans)

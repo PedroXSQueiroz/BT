@@ -8,9 +8,10 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class AnnotadedFieldsConfigurer<T> implements Configurable{
+public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configurable{
 
     final private T target;
 
@@ -19,22 +20,40 @@ public class AnnotadedFieldsConfigurer<T> implements Configurable{
         this.target = target;
     }
 
-    @Override
-    public void config(Map<String, Object> configParams) {
-
+    public void resolveInverseDependecies( Configurable parent, Configurable inner )
+    {
         FieldUtils
-                .getFieldsListWithAnnotation( this.target.getClass(), ConfigParam.class )
-                .forEach( configFields -> {
+                .getFieldsListWithAnnotation( inner.getClass(), ConfigParam.class )
+                .stream()
+                .filter( field -> field.getAnnotation( ConfigParam.class ).getFromParent() )
+                .forEach( field -> {
 
-                    ConfigParam annotation = configFields.getAnnotation(ConfigParam.class);
-
-                    String configFieldName = annotation.name();
-
-                    if( configParams.containsKey(configFieldName) )
+                    if( Configurable.class.isAssignableFrom( field.getType() ) )
                     {
 
                         try {
-                            configFields.set( this.target, configParams.get(configFieldName) );
+                            resolveInverseDependecies( inner, (Configurable) field.get(inner)); ;
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                    String fieldName = field.getAnnotation( ConfigParam.class ).name();
+
+                    Optional<Field> parentFieldFound = FieldUtils
+                            .getFieldsListWithAnnotation(parent.getClass(), ConfigParam.class)
+                            .stream()
+                            .filter(parentField -> parentField.getAnnotation(ConfigParam.class).name().contentEquals(fieldName))
+                            .findAny();
+
+                    if(parentFieldFound.isPresent())
+                    {
+                        try {
+                            Field parentField = parentFieldFound.get();
+                            Object parentFieldValue = parentField.get(parent);
+                            field.set( inner, parentFieldValue );
+
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         }
@@ -42,6 +61,60 @@ public class AnnotadedFieldsConfigurer<T> implements Configurable{
                     }
 
                 });
+    }
+
+    @Override
+    public void config(Map<String, Object> configParams) {
+
+        FieldUtils
+                .getFieldsListWithAnnotation( this.target.getClass(), ConfigParam.class )
+                .stream()
+                .sorted( ( current, comparing)  -> {
+
+                    Integer comparingPriority = current.getAnnotation(ConfigParam.class).priority();
+                    Integer currentPriority = comparing.getAnnotation(ConfigParam.class).priority();
+
+                    return currentPriority.compareTo(comparingPriority);
+                })
+                .forEach( configField -> {
+
+                    ConfigParam annotation = configField.getAnnotation(ConfigParam.class);
+
+                    String configFieldName = annotation.name();
+
+                    if( configParams.containsKey(configFieldName) )
+                    {
+
+                        try {
+
+
+                            if( !annotation.getFromParent() )
+                            {
+                                Object value = configParams.get(configFieldName);
+
+                                configField.set( this.target,
+                                        annotation.getFromParent() ?
+                                            this.target.getParent().getConfigParamValue(configFieldName) :
+                                            value
+                                );
+                            }
+
+
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (ConfigParamNotFoundException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
+                });
+
+        this.target.getCurrentConfiguration()
+                .values()
+                .stream()
+                .filter( value -> value instanceof Configurable )
+                .forEach( value -> this.resolveInverseDependecies( this.target, (Configurable) value ) );
 
     }
 

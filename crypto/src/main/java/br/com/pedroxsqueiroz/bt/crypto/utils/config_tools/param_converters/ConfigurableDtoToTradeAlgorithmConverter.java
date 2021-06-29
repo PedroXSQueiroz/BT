@@ -17,20 +17,4 @@ public class ConfigurableDtoToTradeAlgorithmConverter extends ParamsToConfigurab
         return TradeAlgorithm.class;
     }
 
-    @SneakyThrows
-    @Override
-    public TradeAlgorithm convert(ConfigurableDto source) {
-
-        StockType stockType = this.getFromParent( "stockType" );
-
-        TradeAlgorithm algorihtm = super.convert(source);
-
-        if( algorihtm instanceof AbstractTA4JTradeAlgorihtm )
-        {
-            AbstractTA4JTradeAlgorihtm ta4jAlgorithm = (AbstractTA4JTradeAlgorihtm) algorihtm;
-            ta4jAlgorithm.setStockType(stockType);
-        }
-
-        return algorihtm;
-    }
 }

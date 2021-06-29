@@ -5,7 +5,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import lombok.experimental.Delegate;
 
-public abstract class DummyMarketFacade implements MarketFacade{
+public abstract class DummyMarketFacade extends MarketFacade{
 
     @ConfigParam(name = "key")
     public String key;

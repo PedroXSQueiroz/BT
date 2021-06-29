@@ -19,18 +19,18 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 
-public class Bot implements Configurable {
+public class Bot extends Configurable {
 
     @ConfigParamConverter( converters = ConfigurableDtoToTradeAlgorithmConverter.class)
-    @ConfigParam(name = "algorithm")
+    @ConfigParam(name = "algorithm", priority = 1)
     public TradeAlgorithm algorithm;
 
     @ConfigParamConverter( converters = ConfigurableDtoToMarketFacadeConverter.class)
-    @ConfigParam(name = "market")
+    @ConfigParam(name = "market", priority = 1)
     public MarketFacade marketFacade;
 
     @ConfigParamConverter( converters = StringToStockTypeConverter.class)
-    @ConfigParam(name = "stockType")
+    @ConfigParam(name = "stockType", priority = 0)
     public StockType type;
 
     @ConfigParam(name = "openTradeListener")
