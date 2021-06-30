@@ -1,5 +1,6 @@
 package br.com.pedroxsqueiroz.bt.crypto.services;
 
+import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.StringToStockTypeConverter;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
@@ -11,6 +12,8 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ConfigurableDtoToTradeAlgorithmConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ConfigurableDtoToMarketFacadeConverter;
+import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Startable;
+import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopable;
 import lombok.experimental.Delegate;
 
 import java.time.Instant;
@@ -19,7 +22,13 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 
-public class Bot extends Configurable {
+public class Bot extends Configurable implements Startable, Stopable {
+
+    public static enum State
+    {
+        STARTED,
+        STOPPED
+    }
 
     @ConfigParamConverter( converters = ConfigurableDtoToTradeAlgorithmConverter.class)
     @ConfigParam(name = "algorithm", priority = 1)
@@ -87,6 +96,7 @@ public class Bot extends Configurable {
         void callback( List<SerialEntry> entries );
     }
 
+    @Override
     public void start() throws ImpossibleToStartException {
 
         this.putCallbacksToAlgorithm();
@@ -95,6 +105,11 @@ public class Bot extends Configurable {
 
         this.algorithm.prepare();
         this.algorithm.start();
+
+    }
+
+    @Override
+    public void stop() throws ImpossibleToStopException {
 
     }
 

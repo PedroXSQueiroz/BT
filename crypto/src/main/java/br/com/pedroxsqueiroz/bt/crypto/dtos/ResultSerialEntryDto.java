@@ -2,19 +2,20 @@ package br.com.pedroxsqueiroz.bt.crypto.dtos;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 @Data
-public class BotResultSerialEntryDto extends SerialEntry{
+public class ResultSerialEntryDto extends SerialEntry implements Comparable{
 
     private Double ammount;
 
     private TradeMovementTypeEnum tradeMovementType;
 
-    public BotResultSerialEntryDto()
+    public ResultSerialEntryDto()
     {
     }
 
-    public BotResultSerialEntryDto(SerialEntry serialEntry )
+    public ResultSerialEntryDto(SerialEntry serialEntry )
     {
         this.setOpening(serialEntry.getOpening());
         this.setClosing(serialEntry.getClosing());
@@ -25,7 +26,7 @@ public class BotResultSerialEntryDto extends SerialEntry{
         this.setVolume(serialEntry.getVolume());
     }
 
-    public BotResultSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )
+    public ResultSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )
     {
         this(serialEntry);
 
@@ -35,4 +36,16 @@ public class BotResultSerialEntryDto extends SerialEntry{
 
     }
 
+    @Override
+    public int compareTo(@NotNull Object o) {
+
+        if(ResultSerialEntryDto.class.isAssignableFrom(o.getClass()))
+        {
+            ResultSerialEntryDto otherEntry = (ResultSerialEntryDto) o;
+
+            return this.getDate().compareTo(otherEntry.getDate());
+        }
+
+        return 0;
+    }
 }

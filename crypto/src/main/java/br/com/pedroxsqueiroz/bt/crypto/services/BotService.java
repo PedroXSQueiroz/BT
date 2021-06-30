@@ -2,7 +2,7 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import br.com.pedroxsqueiroz.bt.crypto.controllers.BacktestController;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.BotResultSerialEntryDto;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,22 +24,22 @@ public class BotService {
 
     private static Logger LOGGER = Logger.getLogger( BacktestController.class.getName() );
 
-    public List<BotResultSerialEntryDto> backtest(Map<String, Object> botParamsDto) throws InterruptedException {
+    public List<ResultSerialEntryDto> backtest(Map<String, Object> botParamsDto) throws InterruptedException {
 
         Bot bot = this.create(botParamsDto);
 
-        List<BotResultSerialEntryDto> result = new ArrayList<BotResultSerialEntryDto>();
-        BotResultSerialEntryDto finalSerialEntry = new BotResultSerialEntryDto();
+        List<ResultSerialEntryDto> result = new ArrayList<ResultSerialEntryDto>();
+        ResultSerialEntryDto finalSerialEntry = new ResultSerialEntryDto();
 
-        ArrayBlockingQueue<BotResultSerialEntryDto> entrySeriesQueue = new ArrayBlockingQueue<BotResultSerialEntryDto>(1);
+        ArrayBlockingQueue<ResultSerialEntryDto> entrySeriesQueue = new ArrayBlockingQueue<ResultSerialEntryDto>(1);
         AtomicBoolean isAlive = new AtomicBoolean();
         isAlive.set(true);
 
-        AtomicReference<BotResultSerialEntryDto> currentEntryReference = new AtomicReference<BotResultSerialEntryDto>();
+        AtomicReference<ResultSerialEntryDto> currentEntryReference = new AtomicReference<ResultSerialEntryDto>();
 
         bot.addOpenTradeListener( serialEntry -> {
 
-            BotResultSerialEntryDto currentEntry = currentEntryReference.get();
+            ResultSerialEntryDto currentEntry = currentEntryReference.get();
 
             if(Objects.nonNull(currentEntry))
             {
@@ -51,7 +51,7 @@ public class BotService {
 
         bot.addCloseTradeListener( serialEntry -> {
 
-            BotResultSerialEntryDto currentEntry = currentEntryReference.get();
+            ResultSerialEntryDto currentEntry = currentEntryReference.get();
 
             if(Objects.nonNull(currentEntry))
             {
@@ -67,7 +67,7 @@ public class BotService {
             try {
                 if(Objects.nonNull(serialEntry) && serialEntry.size() == 1 )
                 {
-                    entrySeriesQueue.put( new BotResultSerialEntryDto( serialEntry.get(0) ) );
+                    entrySeriesQueue.put( new ResultSerialEntryDto( serialEntry.get(0) ) );
                 }
                 else
                 {
@@ -92,7 +92,7 @@ public class BotService {
 
         LOGGER.info("bot started");
 
-        BotResultSerialEntryDto currentSerialEntry;
+        ResultSerialEntryDto currentSerialEntry;
 
         while( isAlive.get() )
         {
@@ -134,9 +134,14 @@ public class BotService {
 
         UUID identifier = UUID.randomUUID();
 
+        //SHOULDN'T STAY IN MEMORY, SHOULD PERSIST AND LOAD WHEN START
+        //IN MEMORY SHOULD STAY ONLY ON STARTED ANDA NON STOPPED BOTS
         REGISTERED_BOTS.put(identifier, bot);
 
         return identifier;
     }
 
+    public Bot get(UUID id) {
+        return REGISTERED_BOTS.get(id);
+    }
 }
