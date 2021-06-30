@@ -1,10 +1,12 @@
 package br.com.pedroxsqueiroz.bt.crypto.services;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-public class SerieService {
+@Service
+public class SeriesService {
 
     private final static Map<UUID, Map< UUID, ResultSerialEntryDto>> SERIES = new HashMap< UUID, Map< UUID, ResultSerialEntryDto> >();
 
@@ -22,6 +24,7 @@ public class SerieService {
         if(Objects.isNull(currentSeries))
         {
             currentSeries = new HashMap<UUID, ResultSerialEntryDto>();
+            SERIES.put(id, currentSeries);
         }
 
         UUID newId = UUID.randomUUID();
@@ -37,7 +40,9 @@ public class SerieService {
 
     public ResultSerialEntryDto getEntry( UUID seriesId, UUID entryId )
     {
-        return SERIES.get(seriesId).get(entryId);
+        Map<UUID, ResultSerialEntryDto> series = SERIES.get(seriesId);
+        ResultSerialEntryDto entry = series.get(entryId);
+        return entry;
     }
 
 }

@@ -54,9 +54,11 @@ public class BinanceMarketFacade extends MarketFacade {
     @ConfigParam(name = "stockType", getFromParent = true)
     public StockType currentStockType;
 
-
     @ConfigParam(name = "fecthStockInterval" )
     public Integer interval;
+
+    //FIXME:SHOULD DBE CONFIGURABLE
+    public String intervalUnit = "m";
 
     ScheduledFuture scheduled;
 
@@ -194,7 +196,7 @@ public class BinanceMarketFacade extends MarketFacade {
 
                 HttpClients.createDefault().execute(
                         this.requestFactory
-                                .withRequestParams("interval", this.interval.toString())
+                                .withRequestParams("interval", String.format("%s%s", this.interval.toString(), this.intervalUnit ) )
                                 .withRequestParams("symbol",this.currentStockType.getName())
                                 .withRequestParams("limit","1")
                                 .setup("GET", "klines")

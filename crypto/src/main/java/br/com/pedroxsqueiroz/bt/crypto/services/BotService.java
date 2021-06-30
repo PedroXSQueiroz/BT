@@ -4,6 +4,7 @@ import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import br.com.pedroxsqueiroz.bt.crypto.controllers.BacktestController;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
+import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -143,5 +144,33 @@ public class BotService {
 
     public Bot get(UUID id) {
         return REGISTERED_BOTS.get(id);
+    }
+
+    public void putState(Bot.State state, Bot bot) throws ImpossibleToStartException, ImpossibleToStopException {
+        switch(state)
+        {
+            case STARTED:
+
+                //TODO:SHOULD MANAGE THREADS? THIS REALOCATTED TO A MICROSERVICE
+                new Thread( () -> {
+
+                    LOGGER.info("bot started");
+
+                    try {
+                        bot.start();
+                    } catch (ImpossibleToStartException e) {
+                        e.printStackTrace();
+                    }
+
+                    LOGGER.info("bot stopped");
+
+                }).start();
+
+                break;
+
+            case STOPPED:
+                bot.stop();
+                break;
+        }
     }
 }
