@@ -5,6 +5,7 @@ import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.services.AbstractTA4JTradeAlgorihtm;
+import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.*;
 import org.ta4j.core.indicators.EMAIndicator;
@@ -31,6 +32,9 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
     private BarSeriesManager seriesManager;
 
     private Boolean positionIsOpen = false;
+
+    @ConfigParam(name = "avoidNegativeProfit")
+    public Boolean avoidNegativeProfit;
 
     @Override
     protected void prepare() {
@@ -145,6 +149,8 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
         double DUMMY_ENTRY_EXIT_AMMOUNT_BTC = 0.00052D;
 
+        Bar lastBarOpeningTrade = null;
+
         while( this.isAlive() )
         {
             final List<SerialEntry> serialEntries = this.fetchNextSeriesEntry(this.stockType);
@@ -174,6 +180,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                             this.tradingRecord.enter(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(DUMMY_ENTRY_EXIT_AMMOUNT_BTC));
                             this.entryPosition(DUMMY_ENTRY_EXIT_AMMOUNT_BTC);
                             this.positionIsOpen = true;
+                            lastBarOpeningTrade = lastBar;
                         }
 
                         //}
@@ -185,26 +192,37 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
                         if(this.positionIsOpen)
                         {
-                            this.tradingRecord.exit(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(DUMMY_ENTRY_EXIT_AMMOUNT_BTC));
-
-                            Trade lastTrade = this.tradingRecord.getLastEntry();
-
-                            if(Objects.nonNull(lastTrade))
+                            boolean canClosePosition =  ( this.avoidNegativeProfit && lastBar.getClosePrice().isGreaterThan(lastBarOpeningTrade.getClosePrice() ) )
+                                                        || (!this.avoidNegativeProfit);
+                            if(canClosePosition)
                             {
-                                int entryTradeBarIndex = lastTrade.getIndex();
-                                TradePosition entryTradePosition = TradePosition
-                                                                        .builder()
-                                                                        .entryAmmount( lastTrade.getAmount().doubleValue() )
-                                                                        .entryValue( lastTrade.getValue().doubleValue() )
-                                                                        .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
-                                                                        .exitTime( lastBar.getEndTime().toInstant() )
-                                                                        .exitAmmount(DUMMY_ENTRY_EXIT_AMMOUNT_BTC)
-                                                                        .build();
 
-                                this.exitPosition( entryTradePosition, DUMMY_ENTRY_EXIT_AMMOUNT_BTC);
+                                this.tradingRecord.exit(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(DUMMY_ENTRY_EXIT_AMMOUNT_BTC));
+
+                                Trade lastTrade = this.tradingRecord.getLastEntry();
+
+                                if(Objects.nonNull(lastTrade))
+                                {
+                                    int entryTradeBarIndex = lastTrade.getIndex();
+                                    TradePosition entryTradePosition = TradePosition
+                                            .builder()
+                                            .entryAmmount( lastTrade.getAmount().doubleValue() )
+                                            .entryValue( lastTrade.getValue().doubleValue() )
+                                            .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
+                                            .exitTime( lastBar.getEndTime().toInstant() )
+                                            .exitAmmount(DUMMY_ENTRY_EXIT_AMMOUNT_BTC)
+                                            .build();
+
+                                    this.exitPosition( entryTradePosition, DUMMY_ENTRY_EXIT_AMMOUNT_BTC);
+                                }
+
+                                this.positionIsOpen = false;
+
                             }
-
-                            this.positionIsOpen = false;
+                            else
+                            {
+                                LOGGER.info("Should close position, but the profit is negative, so will be ignored");
+                            }
 
                         }
                     }

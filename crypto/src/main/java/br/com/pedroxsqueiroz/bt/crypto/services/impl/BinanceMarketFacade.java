@@ -58,7 +58,8 @@ public class BinanceMarketFacade extends MarketFacade {
     public Integer interval;
 
     //FIXME:SHOULD DBE CONFIGURABLE
-    public String intervalUnit = "m";
+    @ConfigParam(name = "fecthStockIntervalUnit")
+    public String intervalUnit;
 
     ScheduledFuture scheduled;
 
@@ -218,6 +219,8 @@ public class BinanceMarketFacade extends MarketFacade {
 
                             for( JsonNode currentEntryData : jsonNode )
                             {
+                                LOGGER.info(currentEntryData.toPrettyString());
+
                                 try {
                                     SerialEntry currentEntry = new SerialEntry();
 
