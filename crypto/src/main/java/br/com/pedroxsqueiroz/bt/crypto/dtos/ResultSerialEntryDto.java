@@ -1,8 +1,11 @@
 package br.com.pedroxsqueiroz.bt.crypto.dtos;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 @Data
 public class ResultSerialEntryDto extends SerialEntry implements Comparable{
@@ -10,6 +13,9 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
     private Double ammount;
 
     private TradeMovementTypeEnum tradeMovementType;
+
+    @JsonIgnore
+    private ResultSerialEntryDto entryRelatedByTrade;
 
     public ResultSerialEntryDto()
     {
@@ -47,5 +53,29 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
         }
 
         return 0;
+    }
+
+    //FIXME: REVIEW THE CALCULLUS
+    private Double getAmmountValue()
+    {
+        return this.getAmmount() * this.getClosing();
+    }
+
+    public Double getProfit()
+    {
+        if(Objects.isNull(this.entryRelatedByTrade))
+        {
+            return null;
+        }
+
+        Double initialValue = this.getTradeMovementType() == TradeMovementTypeEnum.ENTRY ?
+                this.getAmmountValue()
+                : this.entryRelatedByTrade.getAmmountValue();
+
+        Double finalValue = this.getTradeMovementType() == TradeMovementTypeEnum.EXIT ?
+                this.getAmmountValue()
+                : this.entryRelatedByTrade.getAmmountValue();
+
+        return finalValue - initialValue;
     }
 }

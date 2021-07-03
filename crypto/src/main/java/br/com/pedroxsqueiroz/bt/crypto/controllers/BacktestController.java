@@ -59,6 +59,8 @@ public class BacktestController {
 
     private void putStoreInMemoryResultTradeCallback(Bot bot, UUID botId, AtomicReference<UUID> lastIDReference) {
 
+        AtomicReference<ResultSerialEntryDto> lastOpening = new AtomicReference<ResultSerialEntryDto>();
+
         bot.addSeriesUpdateTradeListener( (entry) -> {
             UUID lastEntryId = this.seriesService.addEntryToSeries(botId, new ResultSerialEntryDto(entry.get(0)));
             lastIDReference.set(lastEntryId);
@@ -69,6 +71,9 @@ public class BacktestController {
             openingEntry.setAmmount(entry.getEntryAmmount());
             openingEntry.setTradeMovementType(TradeMovementTypeEnum.ENTRY);
             this.seriesService.put(botId, lastIDReference.get(), openingEntry );
+
+            lastOpening.set( openingEntry );
+
         });
 
         bot.addCloseTradeListener( (entry) -> {
@@ -76,6 +81,10 @@ public class BacktestController {
             closingEntry.setAmmount(entry.getExitAmmount());
             closingEntry.setTradeMovementType(TradeMovementTypeEnum.EXIT);
             this.seriesService.put(botId, lastIDReference.get(), closingEntry );
+
+            ResultSerialEntryDto lastOpeningCurrentTrade = lastOpening.get();
+            closingEntry.setEntryRelatedByTrade(lastOpeningCurrentTrade);
+            lastOpeningCurrentTrade.setEntryRelatedByTrade(closingEntry);
         });
     }
 
