@@ -1,7 +1,8 @@
-package br.com.pedroxsqueiroz.bt.crypto.services;
+package br.com.pedroxsqueiroz.bt.crypto.services.algorithms;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
+import br.com.pedroxsqueiroz.bt.crypto.services.TradeAlgorithm;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.StringToStockTypeConverter;

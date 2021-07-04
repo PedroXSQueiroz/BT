@@ -1,10 +1,8 @@
-package br.com.pedroxsqueiroz.bt.crypto.services.impl;
+package br.com.pedroxsqueiroz.bt.crypto.services.algorithms;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
-import br.com.pedroxsqueiroz.bt.crypto.services.AbstractTA4JTradeAlgorihtm;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.*;
@@ -172,18 +170,15 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                 {
                     if(shouldEnter)
                     {
-                        //if( Objects.isNull(lastPosition) || Objects.isNull(lastPosition.getExit() ) )
-                        //{
-
                         if(!this.positionIsOpen)
                         {
                             this.tradingRecord.enter(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(DUMMY_ENTRY_EXIT_AMMOUNT_BTC));
-                            this.entryPosition(DUMMY_ENTRY_EXIT_AMMOUNT_BTC);
+                            this.entryPosition( TradePosition
+                                                    .builder()
+                                                    .entryTime( lastBar.getEndTime().toInstant() ).build());
                             this.positionIsOpen = true;
                             lastBarOpeningTrade = lastBar;
                         }
-
-                        //}
 
                     }
 
@@ -213,7 +208,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                                             .exitAmmount(DUMMY_ENTRY_EXIT_AMMOUNT_BTC)
                                             .build();
 
-                                    this.exitPosition( entryTradePosition, DUMMY_ENTRY_EXIT_AMMOUNT_BTC);
+                                    this.exitPosition( entryTradePosition);
                                 }
 
                                 this.positionIsOpen = false;

@@ -1,7 +1,8 @@
 package br.com.pedroxsqueiroz.bt.crypto.services;
 
+import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
-import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.StringToStockTypeConverter;
+import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.*;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
@@ -10,8 +11,6 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigu
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
-import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ConfigurableDtoToTradeAlgorithmConverter;
-import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ConfigurableDtoToMarketFacadeConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Startable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopable;
 import lombok.experimental.Delegate;
@@ -44,6 +43,24 @@ public class Bot extends Configurable implements Startable, Stopable {
 
     @ConfigParam(name = "openTradeListener")
     public List<OpenTradeListenerCallback> openTradeListerners;
+
+    public interface EntryAmmountGetter
+    {
+        Double get(Wallet wallet);
+    }
+
+    @ConfigParamConverter( converters = NameToEntryAmmountGetterConverter.class)
+    @ConfigParam(name = "entryAmmountGetter")
+    public EntryAmmountGetter entryAmmountGetter;
+
+    public interface ExitAmmountGetter
+    {
+        Double get(TradePosition openTrade);
+    }
+
+    @ConfigParamConverter( converters = NameToExitAmmountGetterConverter.class)
+    @ConfigParam(name = "exitAmmountGetter")
+    public ExitAmmountGetter exitAmmountGetter;
 
     public void addOpenTradeListener(OpenTradeListenerCallback listener)
     {
@@ -121,9 +138,12 @@ public class Bot extends Configurable implements Startable, Stopable {
     }
 
     private void putCallbacksToAlgorithm() {
-        this.algorithm.setEntryMethod( (ammount) -> {
+        this.algorithm.setEntryMethod( (tradePosition) -> {
 
-            TradePosition trade = this.marketFacade.entryPosition(ammount, this.type);
+            Wallet wallet = this.marketFacade.getWallet();
+            Double entryAmmount = this.entryAmmountGetter.get(wallet);
+
+            TradePosition trade = this.marketFacade.entryPosition(entryAmmount, this.type);
 
             if( Objects.nonNull(this.openTradeListerners) )
             {
@@ -134,9 +154,11 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         });
 
-        this.algorithm.setExitMethod( (openTrade, ammount) -> {
+        this.algorithm.setExitMethod( (openTrade) -> {
 
-            TradePosition trade = this.marketFacade.exitPosition( openTrade, ammount, this.type );
+            Double exitAmmount = this.exitAmmountGetter.get(openTrade);
+
+            TradePosition trade = this.marketFacade.exitPosition( openTrade, exitAmmount, this.type );
 
             if(Objects.nonNull(this.closeTradeListerners))
             {

@@ -22,14 +22,14 @@ public abstract class TradeAlgorithm extends Configurable implements Startable, 
 
     public interface EntryTradePositionMethod
     {
-        TradePosition entry( Double ammount );
+        TradePosition entry( TradePosition trade );
     }
 
     private EntryTradePositionMethod entryMethod;
 
     public interface ExitTradePositionMethod
     {
-        TradePosition exit( TradePosition trade, Double ammount );
+        TradePosition exit( TradePosition trade );
     }
 
     private ExitTradePositionMethod exitMethod;
@@ -39,9 +39,9 @@ public abstract class TradeAlgorithm extends Configurable implements Startable, 
         this.entryMethod = entry;
     }
 
-    public TradePosition entryPosition( Double ammount )
+    public TradePosition entryPosition( TradePosition trade )
     {
-        return this.entryMethod.entry(ammount);
+        return this.entryMethod.entry(trade);
     }
 
     public void setExitMethod( ExitTradePositionMethod exit )
@@ -49,9 +49,9 @@ public abstract class TradeAlgorithm extends Configurable implements Startable, 
         this.exitMethod = exit;
     }
 
-    public TradePosition exitPosition( TradePosition trade, Double ammount)
+    public TradePosition exitPosition( TradePosition trade)
     {
-        return this.exitMethod.exit(trade, ammount);
+        return this.exitMethod.exit(trade);
     }
 
     public interface FetchSeriesEntryMethod

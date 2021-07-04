@@ -1,11 +1,9 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.annotated_fields_configurer;
 
-import br.com.pedroxsqueiroz.bt.crypto.services.impl.CsvMarketFacade;
+import br.com.pedroxsqueiroz.bt.crypto.services.markets.CsvMarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-import org.junit.BeforeClass;
-import org.junit.jupiter.api.BeforeAll;
 import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.context.SpringBootTest;
 

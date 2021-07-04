@@ -1,8 +1,9 @@
-package br.com.pedroxsqueiroz.bt.crypto.services.impl;
+package br.com.pedroxsqueiroz.bt.crypto.services.markets;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
@@ -76,6 +77,11 @@ public class CsvMarketFacade extends MarketFacade {
     @Override
     public Double exchangeValueRate(StockType type) {
         return this.lastSerialEntry.getClosing();
+    }
+
+    @Override
+    public Wallet getWallet() {
+        return null;
     }
 
     private CsvToBean<SerialEntry> getCsvToBeanParser(InputStream source)  {

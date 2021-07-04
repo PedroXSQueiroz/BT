@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -34,13 +35,19 @@ public class ParamsToMarketFacadeConverterTest extends AbstractParamConverterTes
     @BeforeAll
     public void setup()
     {
+        /*
         Mockito.doReturn(this.mockMarketFacade)
                 .when(this.mockContext)
                 .getBean("dummy", MarketFacade.class );
+        */
 
         HashMap<String, Object> dummyExtractionParamsResult = new HashMap<>() {{
             put("key", "666");
         }};
+
+        this.converter.setInjectedBeans(new HashSet<MarketFacade>() {{
+            add(mockMarketFacade);
+        }});
 
         Mockito.doReturn(dummyExtractionParamsResult)
                 .when(this.mockParamsUtils)

@@ -87,6 +87,7 @@ public class BotAnnotatedFieldsConfigurerTest
     public ConfigurableParamsUtils getParamUtils()
     {
 
+        /*
         Mockito.doReturn(this.mockAlgorithm)
                 .when(this.mockContext)
                 .getBean("dummy", TradeAlgorithm.class);
@@ -94,6 +95,15 @@ public class BotAnnotatedFieldsConfigurerTest
         Mockito.doReturn(this.mockMarketFacade)
                 .when(this.mockContext)
                 .getBean("dummy", MarketFacade.class);
+         */
+
+        this.marketConverter.setInjectedBeans(new HashSet<MarketFacade>(){{
+            add(mockMarketFacade);
+        }});
+
+        this.algorithmConverter.setInjectedBeans(new HashSet<>(){{
+            add(mockAlgorithm);
+        }});
 
         Set<ParamConverter> converters = new HashSet<ParamConverter>(){{
             add(algorithmConverter);

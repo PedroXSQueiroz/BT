@@ -1,8 +1,9 @@
-package br.com.pedroxsqueiroz.bt.crypto.services.impl;
+package br.com.pedroxsqueiroz.bt.crypto.services.markets;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.factories.RequestFactory;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.Delegate;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -175,6 +177,53 @@ public class BinanceMarketFacade extends MarketFacade {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    @Override
+    public Wallet getWallet() {
+
+        try {
+            HttpUriRequest request = this.requestFactory
+                    .setup("GET", "account")
+                    .assign()
+                    .build();
+
+            return HttpClients.createDefault().execute(request, (response) -> {
+
+                InputStream responseContent = response.getEntity().getContent();
+
+                ObjectMapper serializer = new ObjectMapper();
+                JsonNode responseJson = serializer.readTree(responseContent);
+
+                Wallet wallet = new Wallet();
+
+                JsonNode balance = responseJson.get("balance");
+                balance.forEach( stock -> {
+
+                    String stockName = stock.get("asset").asText();
+                    double ammount = stock.get("free").asDouble();
+
+                    StockType stockType = new StockType(stockName);
+
+                    wallet.addAmmountToStock( stockType, ammount );
+
+                });
+
+                return wallet;
+
+            });
+
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        } catch (ClientProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 

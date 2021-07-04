@@ -19,8 +19,8 @@ services:
         # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--stock=BTCUSDC --outputSeries=/service/src/main/resources/BTCUSDC_series.csv --outputTrade=/service/src/main/resources/BTCUSDC_trades.csvbinancebinance" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
         # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--stock=BTCUSDC --outputSeries=/service/src/main/resources/BTCUSDC_series.csv --outputTrade=/service/src/main/resources/BTCUSDC_trades.csv --dataBase=/service/src/main/resources/Ethereum.csv" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
         # entrypoint: 'mvn compile'
-        # entrypoint: 'mvn -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005" test'
-        entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        entrypoint: 'mvn -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005" test'
+        # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
         volumes:
             - ./crypto:/service/
             - $HOME/.m2:/root/.m2

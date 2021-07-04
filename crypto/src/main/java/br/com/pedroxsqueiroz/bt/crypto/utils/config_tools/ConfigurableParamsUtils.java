@@ -4,6 +4,8 @@ package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ParamsToConfigurableInstanceConverter;
 import com.google.common.collect.Lists;
+import io.github.classgraph.ClassGraph;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -207,4 +209,47 @@ public class ConfigurableParamsUtils {
         return compatibleConverters;
     }
 
+    public <T> Class<? extends T>  resolveConcreteClassOfParam(String alias, Class<T> superClass)
+    {
+
+        return new ClassGraph()
+                    .enableClassInfo()
+                    .enableAnnotationInfo()
+                    .scan()
+                    .getClassesWithAnnotation(InjectInConfigParam.class.getName())
+                    .stream()
+                    .filter(clazz ->
+                            {
+                                String comparingAlias = (String) clazz
+                                        .getAnnotationInfo(InjectInConfigParam.class.getName())
+                                        .getParameterValues()
+                                        .get("alias")
+                                        .getValue();
+
+                                return comparingAlias.contentEquals(alias)
+                                        && (
+                                        clazz.extendsSuperclass(superClass.getName())
+                                                || clazz.implementsInterface(superClass.getName()
+                                        )
+                                );
+                            }
+                    ).map(clazzInfo -> {
+
+                        Class<? extends T> foundedClass = null;
+
+                        try {
+                            foundedClass = (Class<? extends T>) ClassUtils.getClass(clazzInfo.getName());
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+
+                        return foundedClass;
+
+                    })
+                    .filter(Objects::nonNull)
+                    .findAny()
+                    .get();
+
+
+    }
 }

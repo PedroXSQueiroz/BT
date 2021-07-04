@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -37,9 +38,15 @@ public class ParamsToTradeMethodConverterTest
     @BeforeAll
     public void setup()
     {
+        /*
         Mockito.doReturn(this.mockAlgorithm)
                 .when(this.mockContext)
                 .getBean("dummy", TradeAlgorithm.class );
+        */
+
+        this.converter.setInjectedBeans(new HashSet<TradeAlgorithm>(){{
+            add(mockAlgorithm);
+        }});
 
         HashMap<String, Object> dummyExtractionParamsResult = new HashMap<>() {{
             put("stockType", "BTCUSDC");

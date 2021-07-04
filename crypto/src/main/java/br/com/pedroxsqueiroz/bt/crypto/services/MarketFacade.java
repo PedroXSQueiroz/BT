@@ -3,6 +3,7 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Finishable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Startable;
@@ -24,5 +25,7 @@ public abstract class MarketFacade extends Configurable implements Startable, Fi
     public abstract TradePosition exitPosition(TradePosition position, Double ammount, StockType type);
 
     public abstract Double exchangeValueRate( StockType type );
+
+    public abstract Wallet getWallet();
 
 }
