@@ -1,18 +1,15 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters;
 
 import br.com.pedroxsqueiroz.bt.crypto.services.ExitAmmountGetter;
+import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import org.springframework.stereotype.Component;
 
 @Component
-public class NameToExitAmmountGetterConverter extends NameClassToInstanceConverter<ExitAmmountGetter> {
+public class ConfigurableDtoToExitAmmountGetterConverter extends ParamsToConfigurableInstanceConverter<ExitAmmountGetter>{
 
     @Override
-    public Class<ExitAmmountGetter> convertTo() {
+    protected Class<? extends Configurable> getConfigurableClass() {
         return ExitAmmountGetter.class;
     }
 
-    @Override
-    public Class<String> convertFrom() {
-        return String.class;
-    }
 }

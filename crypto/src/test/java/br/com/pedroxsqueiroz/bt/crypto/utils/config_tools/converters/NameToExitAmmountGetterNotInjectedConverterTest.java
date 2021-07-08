@@ -1,11 +1,10 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.converters;
 
-import br.com.pedroxsqueiroz.bt.crypto.services.Bot;
 import br.com.pedroxsqueiroz.bt.crypto.services.DummyExitAmmountGetter;
+import br.com.pedroxsqueiroz.bt.crypto.services.ExitAmmountGetter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.NameToExitAmmountGetterConverter;
-import lombok.experimental.Accessors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.InjectMocks;
@@ -16,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class NameToExitAmmountGetterNotInjectedConverterTest extends AbstractParamConverterTest<String, Bot.ExitAmmountGetter> {
+public class NameToExitAmmountGetterNotInjectedConverterTest extends AbstractParamConverterTest<String, ExitAmmountGetter> {
 
     @Autowired
     private ConfigurableParamsUtils paramsUtils;
@@ -25,7 +24,7 @@ public class NameToExitAmmountGetterNotInjectedConverterTest extends AbstractPar
     private NameToExitAmmountGetterConverter converter;
 
     @Override
-    public ParamConverter<String, Bot.ExitAmmountGetter> getConverter() {
+    public ParamConverter<String, ExitAmmountGetter> getConverter() {
         return this.converter;
     }
 
@@ -41,12 +40,12 @@ public class NameToExitAmmountGetterNotInjectedConverterTest extends AbstractPar
     }
 
     @Override
-    public Bot.ExitAmmountGetter getExpectedResult() {
+    public ExitAmmountGetter getExpectedResult() {
         return new DummyExitAmmountGetter();
     }
 
     @Override
-    public void validateResult(Bot.ExitAmmountGetter expected, Bot.ExitAmmountGetter result)
+    public void validateResult(ExitAmmountGetter expected, ExitAmmountGetter result)
     {
         assertEquals( expected.getClass(), result.getClass() );
     }

@@ -1,6 +1,6 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.converters;
 
-import br.com.pedroxsqueiroz.bt.crypto.services.Bot;
+import br.com.pedroxsqueiroz.bt.crypto.services.EntryAmmountGetter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.NameToEntryAmmountGetterConverter;
@@ -17,10 +17,10 @@ import java.util.HashSet;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class NameToEntryAmmountGetterInjectedConverterTest extends AbstractParamConverterTest<String, Bot.EntryAmmountGetter>{
+public class NameToEntryAmmountGetterInjectedConverterTest extends AbstractParamConverterTest<String, EntryAmmountGetter>{
 
     @Mock
-    private Bot.EntryAmmountGetter getter;
+    private EntryAmmountGetter getter;
 
     @Mock
     private ApplicationContext context;
@@ -41,14 +41,14 @@ public class NameToEntryAmmountGetterInjectedConverterTest extends AbstractParam
 
         this.converter.setParamUtils(this.paramsUtils);
 
-        this.converter.setBeansOfBaseClass( new HashSet<Bot.EntryAmmountGetter>() {{
+        this.converter.setBeansOfBaseClass( new HashSet<EntryAmmountGetter>() {{
             add(getter);
         }} );
 
     }
 
     @Override
-    public ParamConverter<String, Bot.EntryAmmountGetter> getConverter() {
+    public ParamConverter<String, EntryAmmountGetter> getConverter() {
         return this.converter;
     }
 
@@ -58,7 +58,7 @@ public class NameToEntryAmmountGetterInjectedConverterTest extends AbstractParam
     }
 
     @Override
-    public Bot.EntryAmmountGetter getExpectedResult() {
+    public EntryAmmountGetter getExpectedResult() {
         return this.getter;
     }
 }

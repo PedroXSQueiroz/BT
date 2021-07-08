@@ -14,7 +14,7 @@ public class Wallet {
     public void addAmmountToStock( StockType stock, Double ammount )
     {
 
-        if(Objects.nonNull(this.stocksToAmmounts))
+        if(Objects.isNull(this.stocksToAmmounts))
         {
             this.stocksToAmmounts = new HashMap<StockType, Double>();
         }

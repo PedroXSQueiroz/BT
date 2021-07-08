@@ -25,7 +25,7 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
     //    this.context = context;
     //}
 
-    @Autowired
+    @Autowired(required = false)
     public void setInjectedBeans(Set<R> injectedBeans)
     {
         this.injectedBeans = injectedBeans;
@@ -35,7 +35,7 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
 
     //private ApplicationContext context;
 
-    @Autowired
+    @Autowired(required = false)
     public void setParamsUtils(ConfigurableParamsUtils paramsUtils)
     {
         this.paramsUtils = paramsUtils;
@@ -49,11 +49,18 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
 
         Class<R> destinyClass = this.convertTo();
 
-        Optional<R> foundedConfigBean = this.injectedBeans.stream().filter(bean -> destinyClass.isInstance(bean)).findFirst();
+        if(Objects.nonNull(this.injectedBeans))
+        {
+
+        }
+
+        Optional<R> foundedConfigBean = Objects.nonNull(this.injectedBeans) ?
+                                            this.injectedBeans.stream().filter(bean -> destinyClass.isInstance(bean)).findFirst():
+                                            null;
 
         R configBean = null;
 
-        if(foundedConfigBean.isPresent())
+        if( Objects.nonNull(foundedConfigBean) && foundedConfigBean.isPresent())
         {
             configBean =foundedConfigBean.get();
         }

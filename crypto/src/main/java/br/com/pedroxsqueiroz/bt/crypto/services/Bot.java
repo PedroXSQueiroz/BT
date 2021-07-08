@@ -44,21 +44,15 @@ public class Bot extends Configurable implements Startable, Stopable {
     @ConfigParam(name = "openTradeListener")
     public List<OpenTradeListenerCallback> openTradeListerners;
 
-    public interface EntryAmmountGetter
-    {
-        Double get(Wallet wallet);
-    }
-
-    @ConfigParamConverter( converters = NameToEntryAmmountGetterConverter.class)
+    @ConfigParamConverter( converters = {   NameToEntryAmmountGetterConverter.class,
+                                            ConfigurableDtoToEntryAmmountGetterConverter.class
+                                        })
     @ConfigParam(name = "entryAmmountGetter")
     public EntryAmmountGetter entryAmmountGetter;
 
-    public interface ExitAmmountGetter
-    {
-        Double get(TradePosition openTrade);
-    }
-
-    @ConfigParamConverter( converters = NameToExitAmmountGetterConverter.class)
+    @ConfigParamConverter( converters = {   NameToExitAmmountGetterConverter.class,
+                                            ConfigurableDtoToExitAmmountGetterConverter.class
+                                        })
     @ConfigParam(name = "exitAmmountGetter")
     public ExitAmmountGetter exitAmmountGetter;
 

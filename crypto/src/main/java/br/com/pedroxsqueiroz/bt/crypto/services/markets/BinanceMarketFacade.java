@@ -184,7 +184,38 @@ public class BinanceMarketFacade extends MarketFacade {
     public Wallet getWallet() {
 
         try {
+
+            Long serverTime = HttpClients.createDefault().execute(
+                    this.requestFactory
+                            .setup("GET", "time")
+                            .build(),
+                    (response) -> {
+
+                        InputStream responseContent = response.getEntity().getContent();
+                        ObjectMapper serializer = new ObjectMapper();
+                        JsonNode responseJson = serializer.readTree(responseContent);
+
+                        if(response.getStatusLine().getStatusCode() == 200)
+                        {
+
+                            return responseJson.get("serverTime").asLong();
+
+                        }
+
+                        LOGGER.severe(String.format("Error on get syncronization Binance server time\n%s", responseJson ));
+
+                        return null;
+                    }
+            );
+
+            if(Objects.isNull(serverTime))
+            {
+                return null;
+            }
+
             HttpUriRequest request = this.requestFactory
+                    .withRequestParams("timestamp", Long.toString( serverTime ) )
+                    .withRequestParams("recvWindow", Long.toString(30000) )
                     .setup("GET", "account")
                     .assign()
                     .build();
@@ -192,25 +223,33 @@ public class BinanceMarketFacade extends MarketFacade {
             return HttpClients.createDefault().execute(request, (response) -> {
 
                 InputStream responseContent = response.getEntity().getContent();
-
                 ObjectMapper serializer = new ObjectMapper();
                 JsonNode responseJson = serializer.readTree(responseContent);
 
-                Wallet wallet = new Wallet();
+                if(response.getStatusLine().getStatusCode() == 200)
+                {
 
-                JsonNode balance = responseJson.get("balance");
-                balance.forEach( stock -> {
 
-                    String stockName = stock.get("asset").asText();
-                    double ammount = stock.get("free").asDouble();
+                    Wallet wallet = new Wallet();
 
-                    StockType stockType = new StockType(stockName);
+                    JsonNode balance = responseJson.get("balances");
+                    balance.forEach( stock -> {
 
-                    wallet.addAmmountToStock( stockType, ammount );
+                        String stockName = stock.get("asset").asText();
+                        double ammount = stock.get("free").asDouble();
 
-                });
+                        StockType stockType = new StockType(stockName);
 
-                return wallet;
+                        wallet.addAmmountToStock( stockType, ammount );
+
+                    });
+
+                    return wallet;
+                }
+
+                LOGGER.severe( String.format( "Error on request wallet to binance\n%s", responseJson.toPrettyString() ) );
+
+                return null;
 
             });
 

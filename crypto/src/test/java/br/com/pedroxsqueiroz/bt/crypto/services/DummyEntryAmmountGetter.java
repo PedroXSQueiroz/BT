@@ -4,7 +4,7 @@ import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.InjectInConfigParam;
 
 @InjectInConfigParam(alias = "dummy")
-public class DummyEntryAmmountGetter implements Bot.EntryAmmountGetter {
+public class DummyEntryAmmountGetter extends EntryAmmountGetter {
 
     @Override
     public Double get(Wallet wallet) {
