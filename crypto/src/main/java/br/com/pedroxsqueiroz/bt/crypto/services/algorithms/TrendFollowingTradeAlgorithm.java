@@ -172,11 +172,20 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                     {
                         if(!this.positionIsOpen)
                         {
-                            this.tradingRecord.enter(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(DUMMY_ENTRY_EXIT_AMMOUNT_BTC));
-                            this.entryPosition( TradePosition
-                                                    .builder()
-                                                    .entryTime( lastBar.getEndTime().toInstant() ).build());
+                            TradePosition enteredTradePosition = this.entryPosition(
+                                                                            TradePosition
+                                                                                .builder()
+                                                                                .entryTime( lastBar.getEndTime().toInstant() ).build()
+                                                                        );
+
+                            this.tradingRecord.enter(
+                                    endIndex,
+                                    lastBar.getClosePrice(),
+                                    DecimalNum.valueOf(enteredTradePosition.getEntryAmmount())
+                                );
+
                             this.positionIsOpen = true;
+
                             lastBarOpeningTrade = lastBar;
                         }
 
@@ -192,8 +201,6 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                             if(canClosePosition)
                             {
 
-                                this.tradingRecord.exit(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(DUMMY_ENTRY_EXIT_AMMOUNT_BTC));
-
                                 Trade lastTrade = this.tradingRecord.getLastEntry();
 
                                 if(Objects.nonNull(lastTrade))
@@ -205,10 +212,12 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                                             .entryValue( lastTrade.getValue().doubleValue() )
                                             .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
                                             .exitTime( lastBar.getEndTime().toInstant() )
-                                            .exitAmmount(DUMMY_ENTRY_EXIT_AMMOUNT_BTC)
                                             .build();
 
-                                    this.exitPosition( entryTradePosition);
+                                    TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
+
+                                    this.tradingRecord.exit(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(exitedTradePosition.getExitAmmount()));
+
                                 }
 
                                 this.positionIsOpen = false;

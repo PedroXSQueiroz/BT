@@ -29,6 +29,14 @@ public class Bot extends Configurable implements Startable, Stopable {
         STOPPED
     }
 
+    //FIXME: SHOULD BE OBTAINED RELATED TO MARKETFACADE
+    @ConfigParamConverter( converters = {
+                                            NameToAmmountExchangerConverter.class,
+                                            ConfigurableDtoToAmmountExchangerConverter.class
+                                        })
+    @ConfigParam(name = "ammountExchanger", priority = 1)
+    public AmmountExchanger ammountExchanger;
+
     @ConfigParamConverter( converters = ConfigurableDtoToTradeAlgorithmConverter.class)
     @ConfigParam(name = "algorithm", priority = 1)
     public TradeAlgorithm algorithm;
@@ -44,13 +52,15 @@ public class Bot extends Configurable implements Startable, Stopable {
     @ConfigParam(name = "openTradeListener")
     public List<OpenTradeListenerCallback> openTradeListerners;
 
-    @ConfigParamConverter( converters = {   NameToEntryAmmountGetterConverter.class,
+    @ConfigParamConverter( converters = {
+                                            NameToEntryAmmountGetterConverter.class,
                                             ConfigurableDtoToEntryAmmountGetterConverter.class
                                         })
     @ConfigParam(name = "entryAmmountGetter")
     public EntryAmmountGetter entryAmmountGetter;
 
-    @ConfigParamConverter( converters = {   NameToExitAmmountGetterConverter.class,
+    @ConfigParamConverter( converters = {
+                                            NameToExitAmmountGetterConverter.class,
                                             ConfigurableDtoToExitAmmountGetterConverter.class
                                         })
     @ConfigParam(name = "exitAmmountGetter")
@@ -136,6 +146,11 @@ public class Bot extends Configurable implements Startable, Stopable {
 
             Wallet wallet = this.marketFacade.getWallet();
             Double entryAmmount = this.entryAmmountGetter.get(wallet);
+
+            if( Objects.nonNull( this.ammountExchanger ) )
+            {
+                entryAmmount = this.ammountExchanger.exchange(entryAmmount);
+            }
 
             TradePosition trade = this.marketFacade.entryPosition(entryAmmount, this.type);
 

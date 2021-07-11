@@ -5,6 +5,7 @@ import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
+import br.com.pedroxsqueiroz.bt.crypto.services.AmmountExchanger;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
