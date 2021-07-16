@@ -7,6 +7,9 @@ import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.services.Bot;
 import br.com.pedroxsqueiroz.bt.crypto.services.BotService;
 import br.com.pedroxsqueiroz.bt.crypto.services.SeriesService;
+import br.com.pedroxsqueiroz.bt.crypto.services.closeTradeListenerCallback.DBPersistenceCloseTradeListenerCallback;
+import br.com.pedroxsqueiroz.bt.crypto.services.openTradeListenerCallbacks.DBPersistenceOpenTradeListenerCallback;
+import br.com.pedroxsqueiroz.bt.crypto.services.seriesUpdateListenerCallback.DBPersistenceSeriesUpdateListenerCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,16 +51,32 @@ public class BacktestController {
         //TODO:ADD DEFAULT OBSERVERS FOR CHARTS
         UUID botId = this.botService.register(bot);
 
-        AtomicReference<UUID> lastIDReference = new AtomicReference<UUID>();
-
-
-        putStoreInMemoryResultTradeCallback(bot, botId, lastIDReference);
-
+        putStoreInMemoryResultTradeCallback(bot, botId);
+        putDBPersistenceResultTradeCallback(bot);
 
         return new ResponseEntity(botId, HttpStatus.OK);
     }
 
-    private void putStoreInMemoryResultTradeCallback(Bot bot, UUID botId, AtomicReference<UUID> lastIDReference) {
+    @Autowired
+    private DBPersistenceSeriesUpdateListenerCallback dbUpdateCallback;
+
+    @Autowired
+    private DBPersistenceOpenTradeListenerCallback dbOpenCallback;
+
+    @Autowired
+    private DBPersistenceCloseTradeListenerCallback dbCloseCallback;
+
+    private void putDBPersistenceResultTradeCallback(Bot bot) {
+
+        bot.addSeriesUpdateTradeListener( this.dbUpdateCallback );
+        bot.addOpenTradeListener( this.dbOpenCallback );
+        bot.addCloseTradeListener( this.dbCloseCallback );
+
+    }
+
+    private void putStoreInMemoryResultTradeCallback(Bot bot, UUID botId) {
+
+        AtomicReference<UUID> lastIDReference = new AtomicReference<UUID>();
 
         AtomicReference<ResultSerialEntryDto> lastOpening = new AtomicReference<ResultSerialEntryDto>();
 

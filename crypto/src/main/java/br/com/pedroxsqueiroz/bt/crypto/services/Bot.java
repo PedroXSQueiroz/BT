@@ -17,7 +17,6 @@ import lombok.experimental.Delegate;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.EventListener;
 import java.util.List;
 import java.util.Objects;
 
@@ -100,21 +99,6 @@ public class Bot extends Configurable implements Startable, Stopable {
         }
 
         this.seriesUpdateListeners.add(listener);
-    }
-
-    public interface OpenTradeListenerCallback extends EventListener
-    {
-        void callback( TradePosition trade );
-    }
-
-    public interface CloseTradeListenerCallback extends EventListener
-    {
-        void callback( TradePosition trade );
-    }
-
-    public interface SeriesUpdateListenerCallback extends EventListener
-    {
-        void callback( List<SerialEntry> entries );
     }
 
     @Override

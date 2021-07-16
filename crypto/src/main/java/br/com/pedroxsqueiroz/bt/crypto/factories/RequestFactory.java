@@ -24,10 +24,10 @@ public class RequestFactory implements Cloneable {
 
     public RequestFactory()
     {
-        this.headers = new HashMap<String, String>();
-        this.defaultHeaders = new HashMap<String, String>();
-        this.params = new HashMap<String, String>();
-        this.defaultParams = new HashMap<String, String>();
+        this.headers =          new HashMap<String, String>();
+        this.defaultHeaders =   new HashMap<String, String>();
+        this.params =           new HashMap<String, String>();
+        this.defaultParams =    new HashMap<String, String>();
     }
 
     public RequestBuilder currentBuilder;
