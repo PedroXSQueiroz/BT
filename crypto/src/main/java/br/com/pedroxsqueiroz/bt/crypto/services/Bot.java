@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 public class Bot extends Configurable implements Startable, Stopable {
 
@@ -26,6 +27,21 @@ public class Bot extends Configurable implements Startable, Stopable {
     {
         STARTED,
         STOPPED
+    }
+
+    @ConfigParam(name = "botName")
+    public String name;
+
+    private UUID id;
+
+    public UUID getId()
+    {
+        return this.id;
+    }
+
+    public void setId(UUID id)
+    {
+        this.id = id;
     }
 
     //FIXME: SHOULD BE OBTAINED RELATED TO MARKETFACADE
@@ -48,6 +64,7 @@ public class Bot extends Configurable implements Startable, Stopable {
     @ConfigParam(name = "stockType", priority = 0)
     public StockType type;
 
+    @ConfigParamConverter( converters = NameToOpenTradeListenerCallbackConverter.class)
     @ConfigParam(name = "openTradeListener")
     public List<OpenTradeListenerCallback> openTradeListerners;
 
@@ -75,6 +92,7 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.openTradeListerners.add(listener);
     }
 
+    @ConfigParamConverter( converters = NameToCloseTradeListenerCallbackConverter.class)
     @ConfigParam(name = "closeTradeListerners")
     public List<CloseTradeListenerCallback> closeTradeListerners;
 
@@ -88,6 +106,7 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.closeTradeListerners.add(listener);
     }
 
+    @ConfigParamConverter( converters = NameToUpdateSeriesListenerCallbackConverter.class)
     @ConfigParam(name = "seriesUpdateListeners")
     public List<SeriesUpdateListenerCallback> seriesUpdateListeners;
 

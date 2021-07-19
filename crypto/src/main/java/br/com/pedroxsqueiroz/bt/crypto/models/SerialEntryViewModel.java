@@ -1,24 +1,18 @@
 package br.com.pedroxsqueiroz.bt.crypto.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.time.Instant;
-import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "serial_entry")
+@Table(name = "bot_trade_results")
 @Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class SerialEntryModel {
+public class SerialEntryViewModel {
 
     @Id
     @Type(type = "uuid-char")
@@ -45,7 +39,21 @@ public class SerialEntryModel {
     @Column(name = "entry_date")
     private Instant time;
 
+    @Column(name = "ammount")
+    private Double ammount;
+
+    @Column(name = "total_value")
+    private Double totalValue;
+
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "trade_movement_type")
+    private TradeMovementTypeEnum movementType;
+
+    @Column(name = "profit")
+    private Double profit;
+
     @ManyToOne
     @JoinColumn(name = "id_bot")
     private BotModel bot;
+
 }

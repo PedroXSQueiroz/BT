@@ -1,10 +1,12 @@
 package br.com.pedroxsqueiroz.bt.crypto.dtos;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
+import br.com.pedroxsqueiroz.bt.crypto.models.SerialEntryViewModel;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Date;
 import java.util.Objects;
 
 @Data
@@ -14,8 +16,10 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
 
     private TradeMovementTypeEnum tradeMovementType;
 
-    @JsonIgnore
-    private ResultSerialEntryDto entryRelatedByTrade;
+    private Double profit;
+
+    //@JsonIgnore
+    //private ResultSerialEntryDto entryRelatedByTrade;
 
     public ResultSerialEntryDto()
     {
@@ -30,6 +34,18 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
         this.setDate(serialEntry.getDate());
         this.setVariance(serialEntry.getVariance());
         this.setVolume(serialEntry.getVolume());
+    }
+
+    public ResultSerialEntryDto(SerialEntryViewModel serialEntryView)
+    {
+        this.setOpening(serialEntryView.getOpening());
+        this.setClosing(serialEntryView.getClosing());
+        this.setMax(serialEntryView.getMax());
+        this.setMin(serialEntryView.getMin());
+        this.setDate( Date.from( serialEntryView.getTime() ) );
+        this.setVariance(serialEntryView.getVariance());
+        //this.setVolume(serialEntryView.get());
+        this.setProfit( serialEntryView.getProfit() );
     }
 
     public ResultSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )
@@ -55,6 +71,7 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
         return 0;
     }
 
+    /*
     //FIXME: REVIEW THE CALCULLUS
     private Double getAmmountValue()
     {
@@ -78,4 +95,6 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
 
         return finalValue - initialValue;
     }
+    */
+
 }

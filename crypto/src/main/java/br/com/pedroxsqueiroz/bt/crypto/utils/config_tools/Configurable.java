@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 public abstract class Configurable {
 
-    private Configurable parent;
+    protected Configurable parent;
 
     public abstract void config(Map<String, Object> configParams);
 

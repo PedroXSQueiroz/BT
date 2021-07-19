@@ -6,8 +6,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import java.util.UUID;
 
 @Entity
 @Table(name = "trade_movement")
@@ -18,10 +20,11 @@ import javax.persistence.*;
 public class TradeMovementModel {
 
     @Id
+    @Type(type = "uuid-char")
     @Column(name = "id_trade_movement", columnDefinition="uniqueidentifier")
     @GenericGenerator(name = "uuid", strategy = "uuid2")
     @GeneratedValue(generator = "uuid")
-    private String id;
+    private UUID id;
 
     @Column(name = "ammount")
     private Double ammount;

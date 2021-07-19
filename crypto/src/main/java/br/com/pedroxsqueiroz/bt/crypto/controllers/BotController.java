@@ -1,6 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.controllers;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
@@ -21,9 +22,9 @@ import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("bot")
-public class BacktestController {
+public class BotController {
 
-    private static Logger LOGGER = Logger.getLogger( BacktestController.class.getName() );
+    private static Logger LOGGER = Logger.getLogger( BotController.class.getName() );
 
     @Autowired
     private BotService botService;
@@ -46,13 +47,23 @@ public class BacktestController {
     @ResponseBody
     public ResponseEntity createBot(@RequestBody Map<String, Object> botParamsDto)
     {
+        botParamsDto.put("openTradeListener", new String[] { "dbOpenTradeCallback" } );
+
+        botParamsDto.put("closeTradeListerners", new String[] { "dbCloseTradeCallback" } );
+
+        botParamsDto.put("seriesUpdateListeners", new String[] { "dbUpdateSeriesCallback" } );
+
         Bot bot = this.botService.create(botParamsDto);
 
         //TODO:ADD DEFAULT OBSERVERS FOR CHARTS
         UUID botId = this.botService.register(bot);
 
-        putStoreInMemoryResultTradeCallback(bot, botId);
-        putDBPersistenceResultTradeCallback(bot);
+        bot.setId(botId);
+
+
+
+        //putStoreInMemoryResultTradeCallback(bot, botId);
+        //putDBPersistenceResultTradeCallback(bot);
 
         return new ResponseEntity(botId, HttpStatus.OK);
     }
@@ -102,8 +113,11 @@ public class BacktestController {
             this.seriesService.put(botId, lastIDReference.get(), closingEntry );
 
             ResultSerialEntryDto lastOpeningCurrentTrade = lastOpening.get();
-            closingEntry.setEntryRelatedByTrade(lastOpeningCurrentTrade);
-            lastOpeningCurrentTrade.setEntryRelatedByTrade(closingEntry);
+
+            closingEntry.setProfit(
+                    ( entry.getEntryAmmount() * closingEntry.getClosing() ) -
+                    ( lastOpeningCurrentTrade.getAmmount() * lastOpeningCurrentTrade.getClosing() )
+            );
         });
     }
 
@@ -115,7 +129,7 @@ public class BacktestController {
             throws  ImpossibleToStartException,
                     ImpossibleToStopException {
 
-        Bot bot = this.botService.get(id);
+        Bot bot = this.botService.getInstance(id);
 
         this.botService.putState(state, bot);
 

@@ -171,4 +171,17 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
 
         throw new ConfigParamNotFoundException();
     }
+
+    @Override
+    public void setParent(Configurable configurable)
+    {
+         this.target.parent = configurable;
+         configurable.addChild(this.target);
+    }
+
+    @Override
+    public Configurable getParent()
+    {
+        return this.target.parent;
+    }
 }

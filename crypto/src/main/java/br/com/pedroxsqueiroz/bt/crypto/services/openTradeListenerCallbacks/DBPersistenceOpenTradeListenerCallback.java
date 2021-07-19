@@ -10,7 +10,7 @@ import br.com.pedroxsqueiroz.bt.crypto.services.OpenTradeListenerCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service("dbOpenTradeCallback")
 public class DBPersistenceOpenTradeListenerCallback implements OpenTradeListenerCallback {
 
     @Autowired
