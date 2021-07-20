@@ -10,6 +10,7 @@ import org.ta4j.core.indicators.EMAIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
 import org.ta4j.core.num.DecimalNum;
+import org.ta4j.core.num.DoubleNum;
 import org.ta4j.core.num.Num;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
@@ -72,7 +73,10 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
                 LOGGER.info("Trading record created");
 
-                if(rsi.isGreaterThan(ema))
+                boolean isOutOfLimits = rsi.isGreaterThan(DoubleNum.valueOf(OVERBOUGHT_THRESHOLD)) ||
+                                        rsi.isLessThan(DoubleNum.valueOf(OVERSOLD_THRESHOLD));
+
+                if( rsi.isGreaterThan(ema) || !isOutOfLimits )
                 {
                     if(Objects.isNull(lastTrade) || lastTrade.isSell())
                     {
@@ -107,11 +111,15 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                 tradingRecord = this.tradingRecord;
             }
 
+
             if(Objects.nonNull(tradingRecord))
             {
+                boolean isOutOfLimits = rsi.isGreaterThan(DoubleNum.valueOf(OVERBOUGHT_THRESHOLD)) ||
+                        rsi.isLessThan(DoubleNum.valueOf(OVERSOLD_THRESHOLD));
+
                 Trade lastTrade = tradingRecord.getLastEntry();
 
-                if(rsi.isLessThan(ema))
+                if(rsi.isLessThan(ema) || isOutOfLimits)
                 {
                     if(Objects.nonNull(lastTrade) && lastTrade.isBuy())
                     {

@@ -60,11 +60,6 @@ public class BotController {
 
         bot.setId(botId);
 
-
-
-        //putStoreInMemoryResultTradeCallback(bot, botId);
-        //putDBPersistenceResultTradeCallback(bot);
-
         return new ResponseEntity(botId, HttpStatus.OK);
     }
 
