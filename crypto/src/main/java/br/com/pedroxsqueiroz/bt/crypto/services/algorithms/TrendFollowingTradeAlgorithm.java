@@ -153,8 +153,6 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
     @Override
     protected void logic() {
 
-        double DUMMY_ENTRY_EXIT_AMMOUNT_BTC = 0.00052D;
-
         Bar lastBarOpeningTrade = null;
 
         while( this.isAlive() )
@@ -201,6 +199,8 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
                     if(shouldExit)
                     {
+
+
 
                         if(this.positionIsOpen)
                         {
