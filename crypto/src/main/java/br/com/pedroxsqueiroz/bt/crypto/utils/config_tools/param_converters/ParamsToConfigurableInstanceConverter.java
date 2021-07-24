@@ -10,10 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 
 import java.lang.reflect.Modifier;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public abstract class ParamsToConfigurableInstanceConverter<R extends Configurable> implements ParamConverter<ConfigurableDto, R> {
 
@@ -30,6 +27,9 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
     {
         this.injectedBeans = injectedBeans;
     }
+
+    @Autowired
+    private ApplicationContext context;
 
     private Set<R> injectedBeans;
 
@@ -49,14 +49,22 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
 
         Class<R> destinyClass = this.convertTo();
 
-        if(Objects.nonNull(this.injectedBeans))
-        {
-
-        }
-
         Optional<R> foundedConfigBean = Objects.nonNull(this.injectedBeans) ?
-                                            this.injectedBeans.stream().filter(bean -> destinyClass.isInstance(bean)).findFirst():
-                                            null;
+                                                this.injectedBeans.stream()
+                                                        .filter( bean ->
+
+                                                            //CHECK CLASS OF CONFIGURABLE BEAN
+                                                            destinyClass.isInstance(bean)
+
+                                                            // FIND NAME OF CONFIBURABLE BEAN
+                                                            && Arrays.stream(
+                                                                this.getConfigurableClassName( bean.getClass() )
+                                                            ).filter( beanName ->
+                                                                    beanName.contentEquals( source.getName() )
+                                                            ).findAny().isPresent()
+
+                                                        ).findAny()
+                                                :null;
 
         R configBean = null;
 
@@ -86,6 +94,12 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
         }
 
         return configBean;
+
+    }
+
+    private String[] getConfigurableClassName(Class<? extends Configurable> aClass) {
+
+        return this.context.getBeanNamesForType(aClass);
 
     }
 

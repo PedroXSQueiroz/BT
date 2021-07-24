@@ -75,19 +75,33 @@ public class ConfigurableParamsUtils {
                         List<Object> resolvedListValues = new ArrayList<Object>();
                         Class<?> rawValueClass = rawValue.getClass();
 
-                        if( rawValueClass.isArray()){
+                        if( rawValueClass.isArray() || List.class.isAssignableFrom(rawValueClass)){
 
-                            Object[] rawValueIterator = ( Object[] ) rawValue;
+                            Object[] rawValueIterator = rawValueClass.isArray() ?
+                                                            ( Object[] ) rawValue:
+                                                            ( (List<Object>) rawValue ).toArray();
+
+                            Type listGenericType = paramsToFields.get(currentConfigParamName).getGenericType();
+                            Class<?> listParamType = (Class<?>) ((ParameterizedType) listGenericType).getActualTypeArguments()[0];
+                            boolean listParamTypeIsConfigurable = Configurable.class.isAssignableFrom(listParamType);
 
                             for( Object currentRawValue : rawValueIterator )
                             {
 
-                                Type listParamType = paramsToFields.get(currentConfigParamName).getGenericType();
+                                if( listParamTypeIsConfigurable &&
+                                        Map.class.isAssignableFrom(currentRawValue.getClass()))
+                                {
+                                    Map<String, Object> configurableDtoMap = (Map<String, Object>) currentRawValue;
+                                    String configName = (String) configurableDtoMap.get("name");
+                                    Map configInnerParams = (Map) configurableDtoMap.get("params");
+
+                                    currentRawValue = new ConfigurableDto( configName, configInnerParams );
+                                }
 
                                 resolvedListValues.add(
                                     resolveParam(
                                         paramsToFields.get(currentConfigParamName),
-                                        (Class<?>) ( (ParameterizedType) listParamType ).getActualTypeArguments()[0],
+                                        listParamType,
                                         currentRawValue,
                                         configurable
                                     )

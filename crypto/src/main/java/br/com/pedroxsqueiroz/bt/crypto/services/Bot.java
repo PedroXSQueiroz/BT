@@ -106,7 +106,11 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.closeTradeListerners.add(listener);
     }
 
-    @ConfigParamConverter( converters = NameToUpdateSeriesListenerCallbackConverter.class)
+    @ConfigParamConverter( converters = {
+            ConfigurableDtoToUpdateSeriesListenerCallback.class,
+            NameToUpdateSeriesListenerCallbackConverter.class
+
+    })
     @ConfigParam(name = "seriesUpdateListeners")
     public List<SeriesUpdateListenerCallback> seriesUpdateListeners;
 
@@ -166,19 +170,7 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         });
 
-        this.algorithm.setExitMethod( (openTrade) -> {
-
-            Double exitAmmount = this.exitAmmountGetter.get(openTrade);
-
-            TradePosition trade = this.marketFacade.exitPosition( openTrade, exitAmmount, this.type );
-
-            if(Objects.nonNull(this.closeTradeListerners))
-            {
-                this.closeTradeListerners.forEach( listener -> listener.callback(trade) );
-            }
-
-            return trade;
-        });
+        this.algorithm.setExitMethod( this::exitTrade );
 
         this.algorithm.setFetchNextSeriesEntryMethod( (stockType) -> {
 
@@ -190,6 +182,20 @@ public class Bot extends Configurable implements Startable, Stopable {
 
             return serialEntries;
         });
+    }
+
+    public TradePosition exitTrade(TradePosition openTrade) {
+
+        Double exitAmmount = this.exitAmmountGetter.get(openTrade);
+
+        TradePosition trade = this.marketFacade.exitPosition(openTrade, exitAmmount, this.type );
+
+        if(Objects.nonNull(this.closeTradeListerners))
+        {
+            this.closeTradeListerners.forEach( listener -> listener.callback(trade) );
+        }
+
+        return trade;
     }
 
     @Delegate( types = Configurable.class )

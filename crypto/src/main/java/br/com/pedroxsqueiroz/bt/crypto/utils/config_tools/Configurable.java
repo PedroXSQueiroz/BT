@@ -84,4 +84,11 @@ public abstract class Configurable {
         return this.parent;
     }
 
+    public String getName()
+    {
+
+        return null;
+
+    }
+
 }

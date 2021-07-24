@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service("dbUpdateSeriesCallback")
-public class DBPersistenceSeriesUpdateListenerCallback extends Configurable implements SeriesUpdateListenerCallback {
+public class DBPersistenceSeriesUpdateListenerCallback extends SeriesUpdateListenerCallback  {
 
     @Autowired
     private SerialEntryRepository serialEntryRepository;
@@ -32,8 +32,5 @@ public class DBPersistenceSeriesUpdateListenerCallback extends Configurable impl
 
         entries.forEach( currentEntry -> this.seriesService.addEntryToSeries( bot.getId(), currentEntry ) );
     }
-
-    @Delegate( types =  Configurable.class )
-    public AnnotadedFieldsConfigurer configurer = new AnnotadedFieldsConfigurer(this);
 
 }

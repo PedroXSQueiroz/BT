@@ -3,6 +3,7 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import br.com.pedroxsqueiroz.bt.crypto.controllers.BotController;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.models.BotModel;
@@ -68,24 +69,23 @@ public class BotService {
 
         });
 
-        bot.addSeriesUpdateTradeListener( serialEntry -> {
+        bot.addSeriesUpdateTradeListener(new SeriesUpdateListenerCallback() {
+                                                 @Override
+                                                 public void callback(List<SerialEntry> entries) {
+                                                     try {
+                                                         if (Objects.nonNull(entries) && entries.size() == 1) {
+                                                             entrySeriesQueue.put(new ResultSerialEntryDto(entries.get(0)));
+                                                         } else {
+                                                             isAlive.set(false);
+                                                             entrySeriesQueue.put(finalSerialEntry);
+                                                         }
 
-            try {
-                if(Objects.nonNull(serialEntry) && serialEntry.size() == 1 )
-                {
-                    entrySeriesQueue.put( new ResultSerialEntryDto( serialEntry.get(0) ) );
-                }
-                else
-                {
-                    isAlive.set(false);
-                    entrySeriesQueue.put(finalSerialEntry);
-                }
+                                                     } catch (InterruptedException e) {
+                                                         e.printStackTrace();
+                                                     }
 
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-        });
+                                                 }
+                                         });
 
         Thread thread = new Thread(() -> {
             try {

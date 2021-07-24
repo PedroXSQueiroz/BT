@@ -16,9 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("bot")
@@ -47,11 +49,40 @@ public class BotController {
     @ResponseBody
     public ResponseEntity createBot(@RequestBody Map<String, Object> botParamsDto)
     {
-        botParamsDto.put("openTradeListener", new String[] { "dbOpenTradeCallback" } );
+        String[] defaultOpenTradeListener = {"dbOpenTradeCallback"};
 
-        botParamsDto.put("closeTradeListerners", new String[] { "dbCloseTradeCallback" } );
+        botParamsDto.put("openTradeListener",
+                botParamsDto.containsKey("openTradeListener") ?
+                    Stream
+                        .concat(
+                            ( (List<Object>) botParamsDto.get("openTradeListener") ).stream(),
+                            Arrays.stream(defaultOpenTradeListener)
+                        ).toArray(size -> (Object[]) Array.newInstance( Object.class, size )):
+                        defaultOpenTradeListener);
 
-        botParamsDto.put("seriesUpdateListeners", new String[] { "dbUpdateSeriesCallback" } );
+        String[] defaultCloseTradeListener = {"dbCloseTradeCallback"};
+
+        botParamsDto.put("closeTradeListerners",
+
+                botParamsDto.containsKey("closeTradeListerners") ?
+                        Stream
+                            .concat(
+                                ( (List<Object>) botParamsDto.get("closeTradeListerners") ).stream(),
+                                Arrays.stream(defaultCloseTradeListener)
+                            ).toArray(size -> (Object[]) Array.newInstance( Object.class, size )):
+                        defaultCloseTradeListener);
+
+
+        String[] defaultUpdateSeriesListener = {"dbUpdateSeriesCallback"};
+        Object[] updateSeriesListener = botParamsDto.containsKey("seriesUpdateListeners") ?
+                Stream
+                        .concat(
+                                ( (List<Object>) botParamsDto.get("seriesUpdateListeners") ).stream(),
+                                Arrays.stream((Object[]) defaultUpdateSeriesListener)
+                        ).toArray(size -> (Object[]) Array.newInstance(Object.class, size)) :
+                defaultUpdateSeriesListener;
+
+        botParamsDto.put("seriesUpdateListeners", updateSeriesListener);
 
         Bot bot = this.botService.create(botParamsDto);
 
@@ -80,6 +111,7 @@ public class BotController {
 
     }
 
+    /*
     private void putStoreInMemoryResultTradeCallback(Bot bot, UUID botId) {
 
         AtomicReference<UUID> lastIDReference = new AtomicReference<UUID>();
@@ -115,6 +147,7 @@ public class BotController {
             );
         });
     }
+    */
 
     @PutMapping("/{id}/state/{state}")
     @ResponseBody

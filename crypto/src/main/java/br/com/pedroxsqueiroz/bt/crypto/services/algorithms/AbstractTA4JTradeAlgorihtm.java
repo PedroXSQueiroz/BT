@@ -30,7 +30,7 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
         this.barSeries  = new BaseBarSeriesBuilder().build();
 
-        List<SerialEntry> series    = this.fetchNextSeriesEntry(this.stockType);
+        List<SerialEntry> series   = this.fetchNextSeriesEntry(this.stockType);
         addEntriesToSeries(series);
     }
 

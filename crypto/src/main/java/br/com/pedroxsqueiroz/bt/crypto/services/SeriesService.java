@@ -179,11 +179,27 @@ public class SeriesService {
 
     }
 
+    /*
     public TradeMovementModel getLastTradeEntryMovement(BotModel botModel) {
 
         return this.tradeMovementRepository.findAll( (root, query, cb) -> {
             return null;
         }, Pageable.ofSize(1)).getContent().get(0);
+
+    }
+     */
+
+    public List<TradeMovementModel> getOpenendTradesOnBot(UUID id) {
+
+        BotModel botModel = this.botService.get(id);
+
+        return this.tradeMovementRepository.findAll( (root, query, cb) ->
+            cb.and(
+                    cb.equal(root.get("serialEntry").get("bot"), botModel),
+                    cb.equal(root.get("type"), TradeMovementTypeEnum.ENTRY),
+                    cb.isNull(root.get("relatedMovement"))
+            )
+        );
 
     }
 }
