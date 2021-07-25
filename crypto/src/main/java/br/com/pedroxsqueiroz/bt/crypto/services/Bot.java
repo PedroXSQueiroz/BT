@@ -186,9 +186,6 @@ public class Bot extends Configurable implements Startable, Stopable {
 
     public TradePosition exitTrade(TradePosition openTrade) {
 
-        //return this.algorithm.exitPosition(openTrade);
-
-
         Double exitAmmount = this.exitAmmountGetter.get(openTrade);
 
         TradePosition trade = this.marketFacade.exitPosition(openTrade, exitAmmount, this.type );

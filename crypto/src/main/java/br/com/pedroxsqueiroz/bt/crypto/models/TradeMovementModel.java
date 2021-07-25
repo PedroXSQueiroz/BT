@@ -43,4 +43,7 @@ public class TradeMovementModel {
     @ManyToOne
     @JoinColumn(name = "id_related_trade_movement")
     private TradeMovementModel relatedMovement;
+
+    @Column(name = "profit")
+    private Double profit;
 }

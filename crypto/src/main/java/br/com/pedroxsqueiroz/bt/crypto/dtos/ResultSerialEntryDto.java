@@ -11,7 +11,7 @@ import java.util.Date;
 import java.util.Objects;
 
 @Data
-public class ResultSerialEntryDto extends SerialEntry implements Comparable{
+public class ResultSerialEntryDto extends SerialEntry implements Comparable<ResultSerialEntryDto>{
 
     private Double ammount;
 
@@ -72,16 +72,10 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
     }
 
     @Override
-    public int compareTo(@NotNull Object o) {
+    public int compareTo(@NotNull ResultSerialEntryDto o) {
 
-        if(ResultSerialEntryDto.class.isAssignableFrom(o.getClass()))
-        {
-            ResultSerialEntryDto otherEntry = (ResultSerialEntryDto) o;
+        return this.getDate().compareTo(o.getDate());
 
-            return this.getDate().compareTo(otherEntry.getDate());
-        }
-
-        return 0;
     }
 
     /*

@@ -4,6 +4,7 @@ import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import lombok.Data;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -12,7 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "bot_trade_results")
 @Data
-public class SerialEntryViewModel {
+public class SerialEntryViewModel implements Comparable<SerialEntryViewModel> {
 
     @Id
     @Type(type = "uuid-char")
@@ -56,4 +57,8 @@ public class SerialEntryViewModel {
     @JoinColumn(name = "id_bot")
     private BotModel bot;
 
+    @Override
+    public int compareTo(@NotNull SerialEntryViewModel serialEntryViewModel) {
+        return this.time.compareTo(serialEntryViewModel.getTime());
+    }
 }

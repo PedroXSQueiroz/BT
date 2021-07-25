@@ -35,7 +35,7 @@ public class SeriesService {
     {
         BotModel bot = this.botService.get(id);
 
-        return this.entriesRepository
+        return this.entriesViewRepository
                         .findByBot(bot)
                         .stream()
                         .sorted()
@@ -144,6 +144,7 @@ public class SeriesService {
                 }, Pageable.ofSize(1) ).getContent().get(0);
 
             movementModel.setRelatedMovement(previousTradeMovementModel);
+            movementModel.setProfit(movementModel.getValue() - previousTradeMovementModel.getValue());
 
             this.tradeMovementRepository.save(movementModel);
 
