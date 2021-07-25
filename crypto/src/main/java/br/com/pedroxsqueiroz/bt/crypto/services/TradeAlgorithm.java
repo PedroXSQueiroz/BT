@@ -140,4 +140,6 @@ public abstract class TradeAlgorithm extends Configurable implements Startable, 
     @Delegate( types = Configurable.class)
     public AnnotadedFieldsConfigurer configurer = new AnnotadedFieldsConfigurer(this);
 
+    abstract public void closeCurrentPosition();
+
 }

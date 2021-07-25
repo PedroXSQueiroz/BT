@@ -24,6 +24,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
     private static Logger LOGGER = Logger.getLogger( TrendFollowingTradeAlgorithm.class.getName() );
 
+    /*
     private Strategy strategy;
 
     private TradingRecord tradingRecord;
@@ -31,32 +32,39 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
     private BarSeriesManager seriesManager;
 
     private Boolean positionIsOpen = false;
+    */
+    private final int OVERBOUGHT_THRESHOLD  = 60;
+    private final int OVERSOLD_THRESHOLD    = 40;
 
-    @ConfigParam(name = "avoidNegativeProfit")
-    public Boolean avoidNegativeProfit;
+    ClosePriceIndicator closePriceIndicator;
+    RSIIndicator rsiIndicator;
+    EMAIndicator emaIndicator;
+
+    //@ConfigParam(name = "avoidNegativeProfit")
+    //public Boolean avoidNegativeProfit;
 
     @Override
     protected void prepare() {
 
+        closePriceIndicator = new ClosePriceIndicator(barSeries);
+        rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
+        emaIndicator = new EMAIndicator(rsiIndicator, 3);
+
         super.prepare();
 
-        ClosePriceIndicator closePriceIndicator = new ClosePriceIndicator(barSeries);
-        RSIIndicator rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
-        EMAIndicator emaIndicator = new EMAIndicator(rsiIndicator, 3);
+        /*
+        this.strategy = new BaseStrategy(this.getEntryRule(), this.getExitRule());
 
-        final int OVERBOUGHT_THRESHOLD  = 60;
-        final int OVERSOLD_THRESHOLD    = 40;
+        this.seriesManager  = new BarSeriesManager( this.barSeries );
 
-        Rule entryRule = new OverIndicatorRule(rsiIndicator, emaIndicator)
-                .and(new UnderIndicatorRule(rsiIndicator, OVERBOUGHT_THRESHOLD))
-                .and(new OverIndicatorRule(rsiIndicator, OVERSOLD_THRESHOLD));
+        this.tradingRecord  = this.seriesManager.run(this.strategy);
+        */
+    }
 
-
-        Rule exitRule = new UnderIndicatorRule(rsiIndicator, emaIndicator)
-                .or(new OverIndicatorRule(rsiIndicator, OVERBOUGHT_THRESHOLD))
-                .or(new UnderIndicatorRule(rsiIndicator, OVERSOLD_THRESHOLD));
-
-        Rule dynamicPQBuyRule = (index, tradingRecord) -> {
+    @Override
+    protected Rule getEntryRule()
+    {
+        return (index, tradingRecord) -> {
 
             Num ema = emaIndicator.getValue(index);
             Num rsi = rsiIndicator.getValue(index);
@@ -73,8 +81,8 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
                 LOGGER.info("Trading record created");
 
-                boolean isOutOfLimits = rsi.isGreaterThan(DecimalNum.valueOf(OVERBOUGHT_THRESHOLD)) ||
-                                        rsi.isLessThan(DecimalNum.valueOf(OVERSOLD_THRESHOLD));
+                boolean isOutOfLimits = rsi.isGreaterThan(DecimalNum.valueOf(this.OVERBOUGHT_THRESHOLD)) ||
+                        rsi.isLessThan(DecimalNum.valueOf(this.OVERSOLD_THRESHOLD));
 
                 if( rsi.isGreaterThan(ema) || !isOutOfLimits )
                 {
@@ -99,8 +107,12 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
             return false;
         };
+    }
 
-        Rule dynamicPQSellRule = (index, tradingRecord) -> {
+    @Override
+    protected Rule getExitRule()
+    {
+        return (index, tradingRecord) -> {
 
             Num ema = emaIndicator.getValue(index);
             Num rsi = rsiIndicator.getValue(index);
@@ -114,8 +126,8 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
             if(Objects.nonNull(tradingRecord))
             {
-                boolean isOutOfLimits = rsi.isGreaterThan(DecimalNum.valueOf(OVERBOUGHT_THRESHOLD)) ||
-                        rsi.isLessThan(DecimalNum.valueOf(OVERSOLD_THRESHOLD));
+                boolean isOutOfLimits = rsi.isGreaterThan(DecimalNum.valueOf(this.OVERBOUGHT_THRESHOLD)) ||
+                        rsi.isLessThan(DecimalNum.valueOf(this.OVERSOLD_THRESHOLD));
 
                 Trade lastTrade = tradingRecord.getLastEntry();
 
@@ -136,13 +148,6 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
             return false;
 
         };
-
-        this.strategy = new BaseStrategy(dynamicPQBuyRule, dynamicPQSellRule);
-
-        this.seriesManager  = new BarSeriesManager( this.barSeries );
-
-        this.tradingRecord  = this.seriesManager.run(this.strategy);
-
     }
 
     @Override
@@ -150,6 +155,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
     }
 
+    /*
     @Override
     protected void logic() {
 
@@ -248,7 +254,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
                 }
             }
         }
-    }
+    }*/
 
     @Override
     public void finish() {
