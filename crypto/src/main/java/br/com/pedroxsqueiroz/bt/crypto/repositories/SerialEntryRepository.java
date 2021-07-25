@@ -18,7 +18,7 @@ public interface SerialEntryRepository extends JpaRepository<SerialEntryModel, U
 
     SerialEntryModel findTopByOrderByTimeDesc();
 
-    List<SerialEntryViewModel> findByBot(UUID id);
+    List<SerialEntryModel> findByBot(BotModel id);
 
     SerialEntryModel findTopByBotOrderByTimeDesc(BotModel bot);
 }

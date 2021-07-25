@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -50,7 +49,6 @@ public class BotController {
     public ResponseEntity createBot(@RequestBody Map<String, Object> botParamsDto)
     {
         String[] defaultOpenTradeListener = {"dbOpenTradeCallback"};
-
         botParamsDto.put("openTradeListener",
                 botParamsDto.containsKey("openTradeListener") ?
                     Stream
@@ -61,7 +59,6 @@ public class BotController {
                         defaultOpenTradeListener);
 
         String[] defaultCloseTradeListener = {"dbCloseTradeCallback"};
-
         botParamsDto.put("closeTradeListerners",
 
                 botParamsDto.containsKey("closeTradeListerners") ?
@@ -103,52 +100,6 @@ public class BotController {
     @Autowired
     private DBPersistenceCloseTradeListenerCallback dbCloseCallback;
 
-    private void putDBPersistenceResultTradeCallback(Bot bot) {
-
-        bot.addSeriesUpdateTradeListener( this.dbUpdateCallback );
-        bot.addOpenTradeListener( this.dbOpenCallback );
-        bot.addCloseTradeListener( this.dbCloseCallback );
-
-    }
-
-    /*
-    private void putStoreInMemoryResultTradeCallback(Bot bot, UUID botId) {
-
-        AtomicReference<UUID> lastIDReference = new AtomicReference<UUID>();
-
-        AtomicReference<ResultSerialEntryDto> lastOpening = new AtomicReference<ResultSerialEntryDto>();
-
-        bot.addSeriesUpdateTradeListener( (entry) -> {
-            UUID lastEntryId = this.seriesService.addEntryToSeries(botId, new ResultSerialEntryDto(entry.get(0)));
-            lastIDReference.set(lastEntryId);
-        });
-
-        bot.addOpenTradeListener( (entry) -> {
-            ResultSerialEntryDto openingEntry = this.seriesService.getEntry(botId, lastIDReference.get());
-            openingEntry.setAmmount(entry.getEntryAmmount());
-            openingEntry.setTradeMovementType(TradeMovementTypeEnum.ENTRY);
-            this.seriesService.put(botId, lastIDReference.get(), openingEntry );
-
-            lastOpening.set( openingEntry );
-
-        });
-
-        bot.addCloseTradeListener( (entry) -> {
-            ResultSerialEntryDto closingEntry = this.seriesService.getEntry(botId, lastIDReference.get());
-            closingEntry.setAmmount(entry.getExitAmmount());
-            closingEntry.setTradeMovementType(TradeMovementTypeEnum.EXIT);
-            this.seriesService.put(botId, lastIDReference.get(), closingEntry );
-
-            ResultSerialEntryDto lastOpeningCurrentTrade = lastOpening.get();
-
-            closingEntry.setProfit(
-                    ( entry.getEntryAmmount() * closingEntry.getClosing() ) -
-                    ( lastOpeningCurrentTrade.getAmmount() * lastOpeningCurrentTrade.getClosing() )
-            );
-        });
-    }
-    */
-
     @PutMapping("/{id}/state/{state}")
     @ResponseBody
     public ResponseEntity putState(
@@ -164,13 +115,11 @@ public class BotController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-
-
     @GetMapping("/{id}/series/")
     @ResponseBody
-    public ResponseEntity getGeneratedSeries(@PathVariable("id") UUID id)
+    public ResponseEntity getGeneratedSeries(@PathVariable("id") String id)
     {
-        return new ResponseEntity( this.seriesService.getResultSeries(id), HttpStatus.OK );
+        return new ResponseEntity( this.seriesService.getResultSeries( UUID.fromString( id ) ), HttpStatus.OK );
     }
 
 }

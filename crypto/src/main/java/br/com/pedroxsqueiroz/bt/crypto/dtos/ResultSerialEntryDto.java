@@ -1,6 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.dtos;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
+import br.com.pedroxsqueiroz.bt.crypto.models.SerialEntryModel;
 import br.com.pedroxsqueiroz.bt.crypto.models.SerialEntryViewModel;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
@@ -46,6 +47,18 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable{
         this.setVariance(serialEntryView.getVariance());
         //this.setVolume(serialEntryView.get());
         this.setProfit( serialEntryView.getProfit() );
+    }
+
+    public ResultSerialEntryDto(SerialEntryModel serialEntryModel)
+    {
+        this.setOpening(serialEntryModel.getOpening());
+        this.setClosing(serialEntryModel.getClosing());
+        this.setMax(serialEntryModel.getMax());
+        this.setMin(serialEntryModel.getMin());
+        this.setDate( Date.from( serialEntryModel.getTime() ) );
+        this.setVariance(serialEntryModel.getVariance());
+        //this.setVolume(serialEntryModel.get());
+        //this.setProfit( serialEntryModel.get );
     }
 
     public ResultSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )

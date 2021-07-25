@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
+import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
 import java.time.Instant;
@@ -18,7 +19,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SerialEntryModel {
+public class SerialEntryModel implements Comparable<SerialEntryModel>{
 
     @Id
     @Type(type = "uuid-char")
@@ -48,4 +49,9 @@ public class SerialEntryModel {
     @ManyToOne
     @JoinColumn(name = "id_bot")
     private BotModel bot;
+
+    @Override
+    public int compareTo(@NotNull SerialEntryModel serialEntryModel) {
+        return this.getTime().compareTo(serialEntryModel.getTime());
+    }
 }

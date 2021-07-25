@@ -33,8 +33,10 @@ public class SeriesService {
 
     public List<ResultSerialEntryDto> getResultSeries(UUID id)
     {
+        BotModel bot = this.botService.get(id);
+
         return this.entriesRepository
-                        .findByBot(id)
+                        .findByBot(bot)
                         .stream()
                         .sorted()
                         .map( ResultSerialEntryDto::new )
