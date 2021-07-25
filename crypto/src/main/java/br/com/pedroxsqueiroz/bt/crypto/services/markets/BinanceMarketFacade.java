@@ -13,6 +13,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.ClientProtocolException;
@@ -117,20 +118,52 @@ public class BinanceMarketFacade extends MarketFacade {
         return null;
     }
 
+    @SneakyThrows
     @Override
     public TradePosition entryPosition(Double ammount, StockType type) {
 
-        //EXECUTE TRADE ON BINANCE
+        TradePosition newTradePosition = TradePosition
+                .builder()
+                .entryTime(Instant.now())
+                .entryAmmount(ammount)
+                .entryValue(this.exchangeValueRate(type) * ammount)
+                .build();
 
-        return  TradePosition
-                        .builder()
-                        .entryTime(Instant.now())
-                        .entryAmmount(ammount)
-                        .entryValue( this.exchangeValueRate(type) * ammount )
-                        .build();
+        sendOrder(ammount, type, "BUY");
+
+        return newTradePosition;
 
     }
 
+    private void sendOrder(Double ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
+        Long serverTime = this.getCurrentServerTime();
+
+        HttpUriRequest buyOrderRequest = this.requestFactory
+                .withRequestParams("symbol", type.getName())
+                .withRequestParams("side", "BUY")
+                .withRequestParams("type", "MARKET")
+                .withRequestParams("quantity", Double.toString(ammount))
+                .withRequestParams("timestamp", Long.toString(serverTime))
+                .withRequestParams("recvWindow", Long.toString(30000))
+                .setup("POST", "order")
+                .assign()
+                .build();
+
+        HttpClients.createDefault().execute(buyOrderRequest, response -> {
+
+            InputStream content = response.getEntity().getContent();
+
+            ObjectMapper serializer = new ObjectMapper();
+
+            JsonNode responseJson = serializer.readTree(content);
+
+            LOGGER.info(String.format("Trade Binance:\n%s", responseJson.toPrettyString()));
+
+            return responseJson;
+        });
+    }
+
+    @SneakyThrows
     @Override
     public TradePosition exitPosition(TradePosition trade, Double ammount, StockType type) {
 
@@ -139,6 +172,8 @@ public class BinanceMarketFacade extends MarketFacade {
         trade.setExitTime(Instant.now());
         trade.setExitAmmount( ammount );
         trade.setExitValue( this.exchangeValueRate(type) * ammount );
+
+        sendOrder(ammount, type, "SELL");
 
         return trade;
     }
@@ -187,28 +222,7 @@ public class BinanceMarketFacade extends MarketFacade {
 
         try {
 
-            Long serverTime = HttpClients.createDefault().execute(
-                    this.requestFactory
-                            .setup("GET", "time")
-                            .build(),
-                    (response) -> {
-
-                        InputStream responseContent = response.getEntity().getContent();
-                        ObjectMapper serializer = new ObjectMapper();
-                        JsonNode responseJson = serializer.readTree(responseContent);
-
-                        if(response.getStatusLine().getStatusCode() == 200)
-                        {
-
-                            return responseJson.get("serverTime").asLong();
-
-                        }
-
-                        LOGGER.severe(String.format("Error on get syncronization Binance server time\n%s", responseJson ));
-
-                        return null;
-                    }
-            );
+            Long serverTime = this.getCurrentServerTime();
 
             if(Objects.isNull(serverTime))
             {
@@ -266,6 +280,30 @@ public class BinanceMarketFacade extends MarketFacade {
         }
 
         return null;
+    }
+
+    private Long getCurrentServerTime() throws IOException, URISyntaxException, CloneNotSupportedException {
+        return HttpClients.createDefault().execute(
+                this.requestFactory
+                        .setup("GET", "time")
+                        .build(),
+                (response) -> {
+
+                    InputStream responseContent = response.getEntity().getContent();
+                    ObjectMapper serializer = new ObjectMapper();
+                    JsonNode responseJson = serializer.readTree(responseContent);
+
+                    if (response.getStatusLine().getStatusCode() == 200) {
+
+                        return responseJson.get("serverTime").asLong();
+
+                    }
+
+                    LOGGER.severe(String.format("Error on get syncronization Binance server time\n%s", responseJson));
+
+                    return null;
+                }
+        );
     }
 
     @Delegate(types = Configurable.class)

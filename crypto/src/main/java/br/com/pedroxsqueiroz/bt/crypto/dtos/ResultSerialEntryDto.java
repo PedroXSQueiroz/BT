@@ -47,6 +47,8 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable<Resu
         this.setVariance(serialEntryView.getVariance());
         //this.setVolume(serialEntryView.get());
         this.setProfit( serialEntryView.getProfit() );
+        this.setTradeMovementType( serialEntryView.getMovementType() );
+        this.setAmmount(serialEntryView.getAmmount());
     }
 
     public ResultSerialEntryDto(SerialEntryModel serialEntryModel)

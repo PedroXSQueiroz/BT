@@ -50,15 +50,10 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
         rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
         emaIndicator = new EMAIndicator(rsiIndicator, 3);
 
+        int BAR_COUNT_PER_MINUTE_IN_A_DAY = 1440;
+        barSeries.setMaximumBarCount(BAR_COUNT_PER_MINUTE_IN_A_DAY);
+
         super.prepare();
-
-        /*
-        this.strategy = new BaseStrategy(this.getEntryRule(), this.getExitRule());
-
-        this.seriesManager  = new BarSeriesManager( this.barSeries );
-
-        this.tradingRecord  = this.seriesManager.run(this.strategy);
-        */
     }
 
     @Override
@@ -154,107 +149,6 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
     protected void stopLogic() {
 
     }
-
-    /*
-    @Override
-    protected void logic() {
-
-        Bar lastBarOpeningTrade = null;
-
-        while( this.isAlive() )
-        {
-            final List<SerialEntry> serialEntries = this.fetchNextSeriesEntry(this.stockType);
-
-            if( Objects.nonNull(serialEntries) )
-            {
-                this.addEntriesToSeries(serialEntries);
-
-                final int endIndex = this.barSeries.getEndIndex();
-
-                final Bar lastBar = this.barSeries.getBar(endIndex);
-
-                Position lastPosition = this.tradingRecord.getLastPosition();
-
-                boolean shouldEnter = this.strategy.shouldEnter(endIndex);
-                boolean shouldExit = this.strategy.shouldExit(endIndex);
-
-                if(!shouldEnter || !shouldExit)
-                {
-                    if(shouldEnter)
-                    {
-                        if(!this.positionIsOpen)
-                        {
-                            TradePosition enteredTradePosition = this.entryPosition(
-                                                                            TradePosition
-                                                                                .builder()
-                                                                                .entryTime( lastBar.getEndTime().toInstant() ).build()
-                                                                        );
-
-                            this.tradingRecord.enter(
-                                    endIndex,
-                                    lastBar.getClosePrice(),
-                                    DecimalNum.valueOf(enteredTradePosition.getEntryAmmount())
-                                );
-
-                            this.positionIsOpen = true;
-
-                            lastBarOpeningTrade = lastBar;
-                        }
-
-                    }
-
-                    if(shouldExit)
-                    {
-
-                        if(this.positionIsOpen)
-                        {
-                            boolean canClosePosition =  ( this.avoidNegativeProfit && lastBar.getClosePrice().isGreaterThan(lastBarOpeningTrade.getClosePrice() ) )
-                                                        || (!this.avoidNegativeProfit);
-                            if(canClosePosition)
-                            {
-
-                                Trade lastTrade = this.tradingRecord.getLastEntry();
-
-                                if(Objects.nonNull(lastTrade))
-                                {
-                                    int entryTradeBarIndex = lastTrade.getIndex();
-                                    TradePosition entryTradePosition = TradePosition
-                                            .builder()
-                                            .entryAmmount( lastTrade.getAmount().doubleValue() )
-                                            .entryValue( lastTrade.getValue().doubleValue() )
-                                            .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
-                                            .exitTime( lastBar.getEndTime().toInstant() )
-                                            .build();
-
-                                    TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
-
-                                    this.tradingRecord.exit(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(exitedTradePosition.getExitAmmount()));
-
-                                }
-
-                                this.positionIsOpen = false;
-
-                            }
-                            else
-                            {
-                                LOGGER.info("Should close position, but the profit is negative, so will be ignored");
-                            }
-
-                        }
-                    }
-                }
-
-            }
-            else
-            {
-                try {
-                    this.stop();
-                } catch (ImpossibleToStopException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }*/
 
     @Override
     public void finish() {
