@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.sql.Date;
@@ -33,6 +34,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Configuration
 @Component("binance")
@@ -129,31 +132,65 @@ public class BinanceMarketFacade extends MarketFacade {
                 .entryValue(this.exchangeValueRate(type) * ammount)
                 .build();
 
-        sendOrder(ammount, type, "BUY");
+        JsonNode orderResponse = sendOrder(ammount, type, "BUY");
+
+        double liquidAmmountExecuted = getAmmountExecuted(orderResponse);
+
+        newTradePosition.setEntryAmmount(liquidAmmountExecuted);
 
         return newTradePosition;
 
     }
 
-    private void sendOrder(Double ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
+    private double getAmmountExecuted(JsonNode orderResponse) {
+
+        double executedQty = orderResponse.get("executedQty").asDouble();
+
+        JsonNode fills = orderResponse.get("fills");
+
+        double commission = 0;
+
+        for(JsonNode currentFill : fills)
+        {
+            commission += currentFill.get("commission").asDouble();
+        }
+
+        return  executedQty - commission;
+
+    }
+
+    private JsonNode sendOrder(Double ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
+
+        ObjectMapper serializer = new ObjectMapper();
+        String currentStockTypeName = type.getName();
+
         Long serverTime = this.getCurrentServerTime();
 
+        String precisionMask = getPrescisionForStock(currentStockTypeName);
+        int decimalNumberCount = precisionMask.split( "[.]" )[1].indexOf('1');
+
+        Matcher ammountInRangeMatcher = Pattern
+                .compile(String.format("([0-9]*\\.?[0-9]{0,%s})", decimalNumberCount))
+                .matcher(new BigDecimal(ammount).toPlainString());
+        ammountInRangeMatcher.find();
+        String adjustedAmmount = ammountInRangeMatcher.group(1);
+
+        LOGGER.info( String.format( "Sending %s order with %s ammount of %s to Binance", orderSide, adjustedAmmount, type.getName() ) );
+
         HttpUriRequest buyOrderRequest = this.requestFactory
-                .withRequestParams("symbol", type.getName())
-                .withRequestParams("side", "BUY")
+                .withRequestParams("symbol", currentStockTypeName)
+                .withRequestParams("side", orderSide)
                 .withRequestParams("type", "MARKET")
-                .withRequestParams("quantity", Double.toString(ammount))
+                .withRequestParams("quantity", adjustedAmmount)
                 .withRequestParams("timestamp", Long.toString(serverTime))
                 .withRequestParams("recvWindow", Long.toString(30000))
                 .setup("POST", "order")
                 .assign()
                 .build();
 
-        HttpClients.createDefault().execute(buyOrderRequest, response -> {
+        return HttpClients.createDefault().execute(buyOrderRequest, response -> {
 
             InputStream content = response.getEntity().getContent();
-
-            ObjectMapper serializer = new ObjectMapper();
 
             JsonNode responseJson = serializer.readTree(content);
 
@@ -163,17 +200,58 @@ public class BinanceMarketFacade extends MarketFacade {
         });
     }
 
+    private String getPrescisionForStock(String currentStockTypeName) throws IOException, URISyntaxException, CloneNotSupportedException {
+
+        ObjectMapper serializer = new ObjectMapper();
+
+        return HttpClients.createDefault().execute(
+                this.requestFactory
+                        .withRequestParams("symbol", currentStockTypeName)
+                        .setup("GET", "exchangeInfo")
+                        .build()
+                , response -> {
+
+                    if (response.getStatusLine().getStatusCode() == 200) {
+
+                        JsonNode json = serializer.readTree(response.getEntity().getContent());
+
+                        for (JsonNode currentSymbolNode : json.get("symbols")) {
+
+                            String currentSymbolName = currentSymbolNode.get("symbol").asText();
+
+                            if (currentSymbolName.contentEquals(currentStockTypeName)) {
+                                for (JsonNode currentFilter : currentSymbolNode.get("filters")) {
+
+                                    String currentFilterTypeName = currentFilter.get("filterType").asText();
+                                    if (currentFilterTypeName.contentEquals("LOT_SIZE")) {
+                                        return currentFilter.get("stepSize").asText();
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                    return null;
+                });
+    }
+
     @SneakyThrows
     @Override
     public TradePosition exitPosition(TradePosition trade, Double ammount, StockType type) {
-
-        //EXECUTE TRADE ON BINANCE
 
         trade.setExitTime(Instant.now());
         trade.setExitAmmount( ammount );
         trade.setExitValue( this.exchangeValueRate(type) * ammount );
 
-        sendOrder(ammount, type, "SELL");
+        JsonNode orderResponse = sendOrder(ammount, type, "SELL");
+
+        double liquidAmmountExecuted = getAmmountExecuted(orderResponse);
+
+        trade.setExitAmmount(liquidAmmountExecuted);
 
         return trade;
     }

@@ -3,6 +3,7 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.models.BotModel;
 import br.com.pedroxsqueiroz.bt.crypto.models.SerialEntryModel;
 import br.com.pedroxsqueiroz.bt.crypto.models.TradeMovementModel;
@@ -84,11 +85,15 @@ public class SeriesService {
 
         this.entriesRepository.save(entryModel);
 
+        /*
         TradeMovementTypeEnum tradeMovementType = entry.getTradeMovementType();
         if( Objects.nonNull(tradeMovementType) )
         {
+
+
             putTradeMovementOnEntry(entry, entryModel, tradeMovementType);
         }
+        */
     }
 
     private void saveSerialEntry(
@@ -114,24 +119,27 @@ public class SeriesService {
     }
 
 
-    public void putTradeMovementOnEntry(ResultSerialEntryDto entry, SerialEntryModel entryModel, TradeMovementTypeEnum tradeMovementType) {
+    public void putTradeMovementOnEntry( TradePosition trade, ResultSerialEntryDto entry, SerialEntryModel entryModel, TradeMovementTypeEnum tradeMovementType) {
 
-        Double ammount = entry.getAmmount();
-
-        putTradeMovementOnEntry(entryModel, tradeMovementType, ammount);
+        putTradeMovementOnEntry(trade, entryModel, tradeMovementType);
     }
 
     public void putTradeMovementOnEntry(
+            TradePosition trade,
             SerialEntryModel entryModel,
-            TradeMovementTypeEnum tradeMovementType,
-            Double ammount) {
+            TradeMovementTypeEnum tradeMovementType
+            ) {
 
         TradeMovementModel movementModel = TradeMovementModel
                 .builder()
                 .type(tradeMovementType)
-                .ammount(ammount)
+                .ammount( TradeMovementTypeEnum.ENTRY == tradeMovementType ?
+                                trade.getEntryAmmount() :
+                                trade.getExitAmmount() )
                 .serialEntry(entryModel)
-                .value(entryModel.getClosing() * ammount) //OBTAINS VALUR FROM ENTRY
+                .value( TradeMovementTypeEnum.ENTRY == tradeMovementType ?
+                                trade.getEntryValue() :
+                                trade.getExitValue() )
                 .build();
 
         if(tradeMovementType == TradeMovementTypeEnum.EXIT)
@@ -159,6 +167,7 @@ public class SeriesService {
         }
     }
 
+    /*
     public void put( UUID seriesId, UUID entryId, ResultSerialEntryDto entry )
     {
 
@@ -169,6 +178,7 @@ public class SeriesService {
             this.putTradeMovementOnEntry(entry, currentEntry, tradeMovementType);
         }
     }
+    */
 
     public ResultSerialEntryDto getEntry( UUID seriesId, UUID entryId )
     {

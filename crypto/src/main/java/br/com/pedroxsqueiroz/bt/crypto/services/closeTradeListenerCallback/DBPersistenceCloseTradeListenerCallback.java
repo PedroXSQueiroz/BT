@@ -40,56 +40,11 @@ public class DBPersistenceCloseTradeListenerCallback extends Configurable implem
     @Override
     public void callback(TradePosition trade) {
 
-        /*
-        SerialEntryModel serialEntry = this.serialEntryRepository.findTopByOrderByTimeDesc();
-
-        TradeMovementModel previousTradeMovement = this.tradeMovementRepository.findAll(
-                (root, query, cb) -> {
-                    query.orderBy( cb.desc( root.get("serialEntry").get("time") ) );
-                    return cb.equal( root.get("type"), TradeMovementTypeEnum.ENTRY );
-        }, Pageable.ofSize(1) ).getContent().get(0);
-
-        //TradeMovementModel previousTradeMovement = previousTradeMovementOpt.get();
-
-        TradeMovementModel tradeMovementModel = TradeMovementModel
-                .builder()
-                .ammount(trade.getExitAmmount())
-                .value( trade.getExitAmmount() * serialEntry.getClosing() )
-                .serialEntry(serialEntry)
-                .relatedMovement(previousTradeMovement)
-                .type(TradeMovementTypeEnum.EXIT)
-                .build();
-
-        this.tradeMovementRepository.save(tradeMovementModel);
-
-        previousTradeMovement.setRelatedMovement(tradeMovementModel);
-
-        this.tradeMovementRepository.save(previousTradeMovement);
-        */
-
         Bot bot = (Bot) this.getParent();
         BotModel botModel = this.botService.get(bot.getId());
 
         SerialEntryModel serialEntry = this.seriesService.getLastEntryFromSeries(botModel);
-        this.seriesService.putTradeMovementOnEntry(serialEntry, TradeMovementTypeEnum.EXIT, trade.getExitAmmount() );
-
-        /*
-        TradeMovementModel previousTradeMovement = this.seriesService.getLastTradeEntryMovement(botModel);
-
-        TradeMovementModel tradeMovementModel = TradeMovementModel
-                .builder()
-                .ammount(trade.getExitAmmount())
-                .value( trade.getExitAmmount() * serialEntry.getClosing() )
-                .serialEntry(serialEntry)
-                .relatedMovement(previousTradeMovement)
-                .type(TradeMovementTypeEnum.EXIT)
-                .build();
-
-        tradeMovementModel
-        */
-
-        //ADD TRADEMOVEMENT TO ENTRY
-        //this.seriesService.
+        this.seriesService.putTradeMovementOnEntry(trade, serialEntry, TradeMovementTypeEnum.EXIT );
 
     }
 
