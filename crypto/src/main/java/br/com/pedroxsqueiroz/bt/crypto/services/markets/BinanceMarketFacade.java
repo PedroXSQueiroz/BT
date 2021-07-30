@@ -1,21 +1,23 @@
 package br.com.pedroxsqueiroz.bt.crypto.services.markets;
 
+import br.com.pedroxsqueiroz.bt.crypto.config.BinanceConfig;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.factories.RequestFactory;
-import br.com.pedroxsqueiroz.bt.crypto.services.AmmountExchanger;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
-import org.apache.commons.io.IOUtils;
+import okhttp3.*;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.HttpClients;
@@ -23,13 +25,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
+import org.springframework.web.socket.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.sql.Date;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
@@ -69,6 +70,11 @@ public class BinanceMarketFacade extends MarketFacade {
     public String intervalUnit;
 
     ScheduledFuture scheduled;
+
+    WebSocketSession currentWebSocketSession;
+
+    @Autowired
+    private BinanceConfig config;
 
     @Override
     public List<StockType> getSupportedStocks() {
@@ -392,9 +398,114 @@ public class BinanceMarketFacade extends MarketFacade {
 
     }
 
+    public class BinanceSocketClient extends WebSocketListener {
+
+        private ObjectMapper serializer = new ObjectMapper();
+
+        private Long timeLastCandle;
+
+        private SerialEntry currentSerialEntry;
+
+        @Override
+        public void onMessage(WebSocket socket, String message) {
+
+            try
+            {
+
+                JsonNode klinePayload = this.serializer.readTree(message);
+
+                JsonNode klineRoot = klinePayload.get("k");
+
+                long closingTime = klineRoot.get("t").asLong();
+
+                if(Objects.isNull(timeLastCandle))
+                {
+                    timeLastCandle = closingTime;
+                }
+                else if( closingTime > timeLastCandle ) {
+
+                    LOGGER.info("Fetching Entry at closing");
+
+                    serialEntries.put(this.currentSerialEntry);
+
+                    timeLastCandle = closingTime;
+
+                }
+
+                double opening = klineRoot.get("o").asDouble();
+                double closing = klineRoot.get("c").asDouble();
+                double max = klineRoot.get("h").asDouble();
+                double min = klineRoot.get("l").asDouble();
+                double volume = klineRoot.get("v").asDouble();
+
+                Date closingDatetime = Date.from(Instant.ofEpochMilli(closingTime));
+
+                SerialEntry updatedSerialEntry = SerialEntry
+                        .builder()
+                        .date(closingDatetime)
+                        .opening(opening)
+                        .closing(closing)
+                        .max(max)
+                        .min(min)
+                        .volume(volume)
+                        .build();
+
+                this.currentSerialEntry = updatedSerialEntry;
+
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+
+
+    }
+
     @Override
     public void start() throws ImpossibleToStartException {
 
+
+
+            /*
+            WebSocketContainer webSocketContainer = ContainerProvider
+                    .getWebSocketContainer();
+
+            webSocketContainer
+                    .connectToServer( BinanceSocketClient.class, URI.create(klineUrl) );
+            */
+
+            this.serialEntries = new ArrayBlockingQueue<SerialEntry>(MAX_BUFFER_CAPACITY);
+
+            String websocketRoot = this.config.getWebsocketRoot();
+
+            String klineUrl = String.format("%s/%s@kline_%s%s",
+                    websocketRoot,
+                    this.currentStockType.getName().toLowerCase(Locale.ROOT),
+                    this.interval.toString(),
+                    this.intervalUnit );
+
+            Dispatcher dispatcher = new Dispatcher();
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .dispatcher(dispatcher)
+                    .pingInterval(20, TimeUnit.SECONDS)
+                    .build();
+
+            Request klineRequest = new Request.Builder().url(klineUrl).build();
+
+            new Thread( () -> {
+
+                client.newWebSocket(klineRequest, new BinanceSocketClient() );
+
+                LOGGER.info("Socket started, connected to Binance");
+
+            } ).start();
+
+
+
+        /*
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
         this.scheduled = scheduledExecutorService.scheduleAtFixedRate(() -> {
@@ -472,5 +583,6 @@ public class BinanceMarketFacade extends MarketFacade {
 
 
         this.serialEntries = new ArrayBlockingQueue<SerialEntry>(MAX_BUFFER_CAPACITY);
+         */
     }
 }

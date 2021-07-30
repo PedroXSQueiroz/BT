@@ -25,6 +25,8 @@ public class BinanceConfig {
 
     private String apiRoot;
 
+    private String websocketRoot;
+
     private static final String MAC_ALGORITHM = "HmacSHA256";
 
 }

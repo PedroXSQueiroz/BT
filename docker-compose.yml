@@ -11,6 +11,23 @@ services:
     #         BT-network:
     #             aliases:
     #             - "messanging"
+
+    db:
+        container_name: db
+        image: 'mcr.microsoft.com/mssql/server'
+        environment: 
+            ACCEPT_EULA: Y
+            SA_PASSWORD: 1s22S22p6
+        volumes:
+            - ./crypto/src/main/resources/transactions:/migrations/
+        ports:
+            - "1433:1433"
+        networks:
+            BT-network:
+                aliases:
+                - "db"
+
+
     crypto:
         container_name: crypto
         image: 'maven:3.8.1-openjdk-17-slim'

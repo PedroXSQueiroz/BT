@@ -4,7 +4,10 @@ import br.com.pedroxsqueiroz.bt.crypto.converters.CsvDateConverter;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvCustomBindByName;
 import com.opencsv.bean.CsvDate;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -14,7 +17,9 @@ import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 
 @Data
-
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SerialEntry {
 
     //@CsvCustomBindByName( column = "Data", converter = CsvDateConverter.class)
