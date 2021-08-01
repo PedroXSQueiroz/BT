@@ -410,8 +410,8 @@ public class BinanceMarketFacade extends MarketFacade {
                             new HashMap<Integer, String>(){{
                                 put( 1, String.format(
                                             "Is required unless %s ammount to entry, was provided %s",
-                                                entryMovementMinAmmount,
-                                                trade.getEntryAmmount()
+                                                new BigDecimal(entryMovementMinAmmount).toPlainString(),
+                                                new BigDecimal(trade.getEntryAmmount()).toPlainString()
                                             )
                                     );
                             }}: null;

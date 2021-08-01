@@ -230,7 +230,7 @@ public class Bot extends Configurable implements Startable, Stopable {
                                                 profit
                                             ));
 
-                return profit > 0;
+                return profit > 0D;
             }).collect(Collectors.toList());
 
             Double resultantExitAmmount = profitableTrades
