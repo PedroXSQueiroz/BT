@@ -28,4 +28,6 @@ public abstract class MarketFacade extends Configurable implements Startable, Fi
 
     public abstract Wallet getWallet();
 
+    public abstract EntryValidator getEntryValidator();
+
 }

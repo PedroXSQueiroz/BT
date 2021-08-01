@@ -46,4 +46,7 @@ public class TradeMovementModel {
 
     @Column(name = "profit")
     private Double profit;
+
+    @Column(name = "market_id")
+    private String marketId;
 }

@@ -12,6 +12,8 @@ import java.time.format.DateTimeFormatter;
 @Builder
 public class TradePosition {
 
+    private String marketId;
+
     @CsvBindByName( column = "Data entrada")
     private Instant entryTime;
 

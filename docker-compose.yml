@@ -22,6 +22,12 @@ services:
             - ./crypto/src/main/resources/transactions:/migrations/
         ports:
             - "1433:1433"
+        deploy:
+            resources:
+                limits:
+                    memory: 4G
+                reservations:
+                    memory: 4G
         networks:
             BT-network:
                 aliases:
@@ -37,7 +43,7 @@ services:
         # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--stock=BTCUSDC --outputSeries=/service/src/main/resources/BTCUSDC_series.csv --outputTrade=/service/src/main/resources/BTCUSDC_trades.csv --dataBase=/service/src/main/resources/Ethereum.csv" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
         # entrypoint: 'mvn compile'
         # entrypoint: 'mvn -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005" test'
-        entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
+        entrypoint: 'mvn clean compile spring-boot:run -Duser.timezone="America/Sao_Paulo" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000 -Duser.timezone=America/Sao_Paulo "'
         volumes:
             - ./crypto:/service/
             - $HOME/.m2:/root/.m2

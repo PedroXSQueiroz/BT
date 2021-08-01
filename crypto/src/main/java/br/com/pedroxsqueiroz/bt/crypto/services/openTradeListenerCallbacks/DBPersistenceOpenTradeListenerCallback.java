@@ -26,10 +26,11 @@ public class DBPersistenceOpenTradeListenerCallback implements OpenTradeListener
 
         TradeMovementModel tradeMovementModel = TradeMovementModel
                 .builder()
-                .ammount(trade.getEntryAmmount())
-                .value( trade.getEntryAmmount() * serialEntry.getClosing() )
+                .marketId( trade.getMarketId() )
+                .ammount( trade.getEntryAmmount() )
+                .value( trade.getEntryValue() )
                 .serialEntry(serialEntry)
-                .type(TradeMovementTypeEnum.ENTRY)
+                .type( TradeMovementTypeEnum.ENTRY )
                 .build();
 
         this.tradeMovementRepository.save(tradeMovementModel);

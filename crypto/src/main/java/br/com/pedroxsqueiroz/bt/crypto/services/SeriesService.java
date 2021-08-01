@@ -11,9 +11,9 @@ import br.com.pedroxsqueiroz.bt.crypto.repositories.SerialEntryRepository;
 import br.com.pedroxsqueiroz.bt.crypto.repositories.SerialEntryViewRepository;
 import br.com.pedroxsqueiroz.bt.crypto.repositories.TradeMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -118,53 +118,63 @@ public class SeriesService {
         this.entriesRepository.save(entryModel);
     }
 
+    public void putExitTradeMovementOnSerialEntry(
+            TradeMovementModel entry,
+            TradeMovementModel exit)
+    {
 
-    public void putTradeMovementOnEntry( TradePosition trade, ResultSerialEntryDto entry, SerialEntryModel entryModel, TradeMovementTypeEnum tradeMovementType) {
+        double currentProfit = exit.getValue() - entry.getValue();
 
-        putTradeMovementOnEntry(trade, entryModel, tradeMovementType);
+        Double previousPersistedProfit = exit.getProfit();
+
+        Double resultantProfit = Objects.nonNull(previousPersistedProfit) ?
+                previousPersistedProfit + currentProfit :
+                currentProfit;
+
+        exit.setProfit(resultantProfit);
+
+        this.tradeMovementRepository.save(exit);
+
+        entry.setRelatedMovement(exit);
+
+        this.tradeMovementRepository.save(entry);
+
     }
 
-    public void putTradeMovementOnEntry(
+    public void putExitTradeMovementOnSerialEntry(
+            TradeMovementModel entry,
+            TradePosition exit,
+            SerialEntryModel entryModel
+        )
+    {
+        TradeMovementModel exitModel = TradeMovementModel
+                .builder()
+                .marketId( exit.getMarketId() )
+                .type( TradeMovementTypeEnum.EXIT )
+                .ammount( exit.getExitAmmount() )
+                .serialEntry( entryModel )
+                .value( exit.getExitValue() )
+                .build();
+
+        this.putExitTradeMovementOnSerialEntry(entry, exitModel);
+
+    }
+
+    public void putEntryTradeMovementOnSerialEntry(
             TradePosition trade,
-            SerialEntryModel entryModel,
-            TradeMovementTypeEnum tradeMovementType
+            SerialEntryModel entryModel
             ) {
 
         TradeMovementModel movementModel = TradeMovementModel
                 .builder()
-                .type(tradeMovementType)
-                .ammount( TradeMovementTypeEnum.ENTRY == tradeMovementType ?
-                                trade.getEntryAmmount() :
-                                trade.getExitAmmount() )
+                .type(TradeMovementTypeEnum.ENTRY)
+                .ammount(trade.getEntryAmmount() )
                 .serialEntry(entryModel)
-                .value( TradeMovementTypeEnum.ENTRY == tradeMovementType ?
-                                trade.getEntryValue() :
-                                trade.getExitValue() )
+                .value( trade.getEntryValue() )
                 .build();
 
-        if(tradeMovementType == TradeMovementTypeEnum.EXIT)
-        {
+        this.tradeMovementRepository.save(movementModel);
 
-            TradeMovementModel previousTradeMovementModel = this.tradeMovementRepository.findAll(
-                (root, query, cb) -> {
-                    query.orderBy( cb.desc( root.get("serialEntry").get("time") ) );
-                    return cb.equal( root.get("type"), TradeMovementTypeEnum.ENTRY );
-                }, Pageable.ofSize(1) ).getContent().get(0);
-
-            movementModel.setRelatedMovement(previousTradeMovementModel);
-            movementModel.setProfit(movementModel.getValue() - previousTradeMovementModel.getValue());
-
-            this.tradeMovementRepository.save(movementModel);
-
-            previousTradeMovementModel.setRelatedMovement(movementModel);
-
-            this.tradeMovementRepository.save(previousTradeMovementModel);
-
-        }
-        else
-        {
-            this.tradeMovementRepository.save(movementModel);
-        }
     }
 
     /*
@@ -187,9 +197,17 @@ public class SeriesService {
     }
 
     public SerialEntryModel getLastEntryFromSeries(BotModel bot) {
-
         return this.entriesRepository.findTopByBotOrderByTimeDesc(bot);
+    }
 
+    public SerialEntryModel getByTime(Instant time, BotModel bot)
+    {
+        return this.entriesRepository.findByTimeAndBot(time, bot);
+    }
+
+    public TradeMovementModel getTradeMovementOnSerialEntry(SerialEntryModel serialEntry)
+    {
+        return this.tradeMovementRepository.findBySerialEntry(serialEntry);
     }
 
     /*
@@ -213,6 +231,12 @@ public class SeriesService {
                     cb.isNull(root.get("relatedMovement"))
             )
         );
+
+    }
+
+    public TradeMovementModel getTradeMovementByMarketId(String marketId) {
+
+        return this.tradeMovementRepository.findOneByMarketId(marketId);
 
     }
 }

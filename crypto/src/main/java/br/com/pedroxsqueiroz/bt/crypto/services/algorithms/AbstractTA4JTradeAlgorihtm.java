@@ -10,6 +10,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.StringToStockTypeConverter;
 import org.ta4j.core.*;
 import org.ta4j.core.num.DecimalNum;
+import org.ta4j.core.num.Num;
 
 import java.time.ZoneId;
 import java.util.List;
@@ -101,13 +102,14 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
                 {
                     if(shouldEnter)
                     {
-                        if(!this.positionIsOpen)
+                        TradePosition enteredTradePosition = this.entryPosition(
+                                TradePosition
+                                        .builder()
+                                        .entryTime( lastBar.getEndTime().toInstant() ).build()
+                        );
+
+                        if( Objects.nonNull( enteredTradePosition ) )
                         {
-                            TradePosition enteredTradePosition = this.entryPosition(
-                                    TradePosition
-                                            .builder()
-                                            .entryTime( lastBar.getEndTime().toInstant() ).build()
-                            );
 
                             this.tradingRecord.enter(
                                     endIndex,
@@ -118,6 +120,7 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
                             this.positionIsOpen = true;
 
                             lastBarOpeningTrade = lastBar;
+
                         }
 
                     }
@@ -127,8 +130,11 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
                         if(this.positionIsOpen)
                         {
-                            boolean canClosePosition =  ( this.avoidNegativeProfit && lastBar.getClosePrice().isGreaterThan(lastBarOpeningTrade.getClosePrice() ) )
-                                    || (!this.avoidNegativeProfit);
+                            //boolean canClosePosition =  ( this.avoidNegativeProfit && lastBar.getClosePrice().isGreaterThan(lastBarOpeningTrade.getClosePrice() ) )
+                            //        || (!this.avoidNegativeProfit);
+
+                            boolean canClosePosition = true;
+
                             if(canClosePosition)
                             {
 
@@ -147,11 +153,17 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
                                     TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
 
-                                    this.tradingRecord.exit(endIndex, lastBar.getClosePrice(), DecimalNum.valueOf(exitedTradePosition.getExitAmmount()));
+                                    if(Objects.nonNull(exitedTradePosition))
+                                    {
+                                        DecimalNum exitAmmount = DecimalNum.valueOf(exitedTradePosition.getExitAmmount());
+                                        Num currentClosePrice = lastBar.getClosePrice();
+                                        this.tradingRecord.exit(endIndex, currentClosePrice, exitAmmount);
+                                    }
+
 
                                 }
 
-                                this.positionIsOpen = false;
+                                //this.positionIsOpen = false;
 
                             }
                             else

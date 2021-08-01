@@ -56,13 +56,13 @@ public class BotService {
 
         });
 
-        bot.addCloseTradeListener( serialEntry -> {
+        bot.addCloseTradeListener( ( open, close) -> {
 
             ResultSerialEntryDto currentEntry = currentEntryReference.get();
 
             if(Objects.nonNull(currentEntry))
             {
-                currentEntry.setAmmount( serialEntry.getExitAmmount() );
+                currentEntry.setAmmount( close.getExitAmmount() );
                 currentEntry.setTradeMovementType(TradeMovementTypeEnum.EXIT);
             }
 

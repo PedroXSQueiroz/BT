@@ -7,6 +7,7 @@ import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.factories.RequestFactory;
+import br.com.pedroxsqueiroz.bt.crypto.services.EntryValidator;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
@@ -44,6 +45,9 @@ public class BinanceMarketFacade extends MarketFacade {
 
     BlockingQueue<SerialEntry> serialEntries;
 
+    //FIXME: BETTER NAME AND BETTER LOGIC
+    private SerialEntry currentIntervaledSerialEntry;
+
     private static final int MAX_BUFFER_CAPACITY = 6;
 
     private static final int SERIES_ENTRY_TIME = 0;
@@ -68,6 +72,11 @@ public class BinanceMarketFacade extends MarketFacade {
     //FIXME:SHOULD DBE CONFIGURABLE
     @ConfigParam(name = "fecthStockIntervalUnit")
     public String intervalUnit;
+
+    @ConfigParam(name = "entryMinAmmount")
+    public Double entryMovementMinAmmount;
+
+    private Double currentClosingPrice;
 
     ScheduledFuture scheduled;
 
@@ -140,14 +149,27 @@ public class BinanceMarketFacade extends MarketFacade {
 
         JsonNode orderResponse = sendOrder(ammount, type, "BUY");
 
-        double liquidAmmountExecuted = getAmmountExecuted(orderResponse);
+        if( Objects.isNull(orderResponse) )
+        {
+            LOGGER.info("Failed on send order to Binance");
+            return null;
+        }
 
-        newTradePosition.setEntryAmmount(liquidAmmountExecuted);
+        //double liquidAmmountExecuted = getAmmountExecuted(orderResponse);
+
+        double executedQty = orderResponse.get("executedQty").asDouble();
+        double value = orderResponse.get("cummulativeQuoteQty").asDouble();
+
+        newTradePosition.setEntryAmmount( executedQty );
+        newTradePosition.setEntryValue( value );
+
+        newTradePosition.setMarketId( orderResponse.get("orderId").asText() );
 
         return newTradePosition;
 
     }
 
+    /*
     private double getAmmountExecuted(JsonNode orderResponse) {
 
         double executedQty = orderResponse.get("executedQty").asDouble();
@@ -162,8 +184,8 @@ public class BinanceMarketFacade extends MarketFacade {
         }
 
         return  executedQty - commission;
-
     }
+    */
 
     private JsonNode sendOrder(Double ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
 
@@ -194,13 +216,20 @@ public class BinanceMarketFacade extends MarketFacade {
                 .assign()
                 .build();
 
-        return HttpClients.createDefault().execute(buyOrderRequest, response -> {
+        return HttpClients.createDefault().execute( buyOrderRequest, response -> {
+
 
             InputStream content = response.getEntity().getContent();
 
             JsonNode responseJson = serializer.readTree(content);
 
             LOGGER.info(String.format("Trade Binance:\n%s", responseJson.toPrettyString()));
+
+            if( response.getStatusLine().getStatusCode() != 200 )
+            {
+                LOGGER.info("Failed on send order to binance");
+                return null;
+            }
 
             return responseJson;
         });
@@ -255,15 +284,22 @@ public class BinanceMarketFacade extends MarketFacade {
 
         JsonNode orderResponse = sendOrder(ammount, type, "SELL");
 
-        double liquidAmmountExecuted = getAmmountExecuted(orderResponse);
+        //double liquidAmmountExecuted = getAmmountExecuted(orderResponse);
+        double executedQty = orderResponse.get("executedQty").asDouble();
+        double value = orderResponse.get("cummulativeQuoteQty").asDouble();
 
-        trade.setExitAmmount(liquidAmmountExecuted);
+        trade.setMarketId(orderResponse.get("orderId").asText());
+        trade.setExitAmmount(executedQty);
+        trade.setExitValue(value);
 
         return trade;
     }
 
     @Override
     public Double exchangeValueRate(StockType type) {
+
+        //return this.currentIntervaledSerialEntry.getClosing();
+
 
         try {
 
@@ -298,7 +334,9 @@ public class BinanceMarketFacade extends MarketFacade {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return null;
+
     }
 
     @Override
@@ -366,6 +404,19 @@ public class BinanceMarketFacade extends MarketFacade {
         return null;
     }
 
+    @Override
+    public EntryValidator getEntryValidator() {
+        return (trade) -> trade.getEntryAmmount() < this.entryMovementMinAmmount ?
+                            new HashMap<Integer, String>(){{
+                                put( 1, String.format(
+                                            "Is required unless %s ammount to entry, was provided %s",
+                                                entryMovementMinAmmount,
+                                                trade.getEntryAmmount()
+                                            )
+                                    );
+                            }}: null;
+    }
+
     private Long getCurrentServerTime() throws IOException, URISyntaxException, CloneNotSupportedException {
         return HttpClients.createDefault().execute(
                 this.requestFactory
@@ -427,6 +478,8 @@ public class BinanceMarketFacade extends MarketFacade {
                     LOGGER.info("Fetching Entry at closing");
 
                     serialEntries.put(this.currentSerialEntry);
+
+                    currentIntervaledSerialEntry = this.currentSerialEntry;
 
                     timeLastCandle = closingTime;
 

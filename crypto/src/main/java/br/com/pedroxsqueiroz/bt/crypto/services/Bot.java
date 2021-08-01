@@ -2,6 +2,7 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
+import br.com.pedroxsqueiroz.bt.crypto.services.markets.BinanceMarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.*;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
@@ -14,14 +15,16 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Startable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopable;
 import lombok.experimental.Delegate;
+import org.apache.logging.log4j.util.Strings;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class Bot extends Configurable implements Startable, Stopable {
+
+    private static Logger LOGGER = Logger.getLogger( Bot.class.getName() );
 
     public static enum State
     {
@@ -148,7 +151,12 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.algorithm.prepare();
     }
 
+    private List<TradePosition> openendTrades;
+
     private void putCallbacksToAlgorithm() {
+
+        this.openendTrades = new ArrayList<TradePosition>();
+
         this.algorithm.setEntryMethod( (tradePosition) -> {
 
             Wallet wallet = this.marketFacade.getWallet();
@@ -159,18 +167,104 @@ public class Bot extends Configurable implements Startable, Stopable {
                 entryAmmount = this.ammountExchanger.exchange(entryAmmount);
             }
 
+            tradePosition.setEntryAmmount(entryAmmount);
+
+            EntryValidator entryValidator = this.marketFacade.getEntryValidator();
+
+            if(Objects.nonNull(entryValidator))
+            {
+                Map<Integer, String> errors = entryValidator.validate(tradePosition);
+
+                if(Objects.nonNull(errors))
+                {
+                    String errorMessage = String.format("The trade at %s has errors: %s",
+                            tradePosition.getEntryTime(),
+                            Strings.join(errors.values(), ',')
+                    );
+
+                    LOGGER.info(errorMessage);
+
+                    return null;
+                }
+            }
+
             TradePosition trade = this.marketFacade.entryPosition(entryAmmount, this.type);
+
+            if(Objects.isNull(trade))
+            {
+                LOGGER.info("Failed on entry position");
+                return null;
+            }
 
             if( Objects.nonNull(this.openTradeListerners) )
             {
                 this.openTradeListerners.forEach(listener -> listener.callback(trade) );
             }
 
+            this.openendTrades.add(trade);
+
             return trade;
 
         });
 
-        this.algorithm.setExitMethod( this::exitTrade );
+        this.algorithm.setExitMethod( (tradePosition) ->
+        {
+
+            Double exchangeValueRate = this.marketFacade.exchangeValueRate(this.type);
+
+            List<TradePosition> profitableTrades = this.openendTrades.stream().filter(trade -> {
+
+                Double currentExitAmmount = this.exitAmmountGetter.get(trade);
+
+                double currentExitValue = currentExitAmmount * exchangeValueRate;
+                Double profit =     currentExitValue
+                                -   trade.getEntryValue();
+
+                LOGGER.info(String.format("Trade %s Entered with ( ammount:%f, value: %f ) could exit with ( ammount: %f, value: %f, current axchange rate: %f, profit: %f )",
+                                                trade.getMarketId(),
+                                                trade.getEntryAmmount(),
+                                                trade.getEntryValue(),
+                                                currentExitAmmount,
+                                                currentExitValue,
+                                                exchangeValueRate,
+                                                profit
+                                            ));
+
+                return profit > 0;
+            }).collect(Collectors.toList());
+
+            Double resultantExitAmmount = profitableTrades
+                    .stream()
+                    .mapToDouble(this.exitAmmountGetter::get)
+                    .sum();
+
+            tradePosition.setExitAmmount(resultantExitAmmount);
+
+            //TradePosition exitedTrade = this.exitTrade(tradePosition);
+
+            if(profitableTrades.size() > 1)
+            {
+                TradePosition exitedTrade = this.marketFacade.exitPosition(tradePosition, resultantExitAmmount, this.type );
+
+                if( Objects.nonNull( this.closeTradeListerners ) )
+                {
+                    profitableTrades.forEach( trade ->
+                                                    this.closeTradeListerners.forEach( listener ->
+                                                                                        listener.callback(trade, exitedTrade)
+                                                                                    )
+                                            );
+
+                }
+
+                this.openendTrades.removeAll(profitableTrades);
+
+                return exitedTrade;
+            }
+
+            LOGGER.info("Profitable trade not found");
+
+            return null;
+        });
 
         this.algorithm.setFetchNextSeriesEntryMethod( (stockType) -> {
 
@@ -192,7 +286,7 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         if(Objects.nonNull(this.closeTradeListerners))
         {
-            this.closeTradeListerners.forEach( listener -> listener.callback(trade) );
+            this.closeTradeListerners.forEach( listener -> listener.callback(openTrade, trade) );
         }
 
         this.algorithm.closeCurrentPosition();

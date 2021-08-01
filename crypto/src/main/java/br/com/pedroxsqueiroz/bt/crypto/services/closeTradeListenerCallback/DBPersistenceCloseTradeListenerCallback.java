@@ -5,8 +5,6 @@ import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.models.BotModel;
 import br.com.pedroxsqueiroz.bt.crypto.models.SerialEntryModel;
 import br.com.pedroxsqueiroz.bt.crypto.models.TradeMovementModel;
-import br.com.pedroxsqueiroz.bt.crypto.repositories.SerialEntryRepository;
-import br.com.pedroxsqueiroz.bt.crypto.repositories.TradeMovementRepository;
 import br.com.pedroxsqueiroz.bt.crypto.services.Bot;
 import br.com.pedroxsqueiroz.bt.crypto.services.BotService;
 import br.com.pedroxsqueiroz.bt.crypto.services.CloseTradeListenerCallback;
@@ -15,10 +13,9 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigu
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import lombok.experimental.Delegate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.Objects;
 
 @Service("dbCloseTradeCallback")
 public class DBPersistenceCloseTradeListenerCallback extends Configurable implements CloseTradeListenerCallback {
@@ -38,13 +35,25 @@ public class DBPersistenceCloseTradeListenerCallback extends Configurable implem
     private BotService botService;
 
     @Override
-    public void callback(TradePosition trade) {
+    public void callback(TradePosition entry, TradePosition close) {
 
         Bot bot = (Bot) this.getParent();
         BotModel botModel = this.botService.get(bot.getId());
 
-        SerialEntryModel serialEntry = this.seriesService.getLastEntryFromSeries(botModel);
-        this.seriesService.putTradeMovementOnEntry(trade, serialEntry, TradeMovementTypeEnum.EXIT );
+        TradeMovementModel entryModel = this.seriesService.getTradeMovementByMarketId( entry.getMarketId() );
+
+        TradeMovementModel exitModel = this.seriesService.getTradeMovementByMarketId(close.getMarketId());
+
+        if(Objects.nonNull(exitModel))
+        {
+            this.seriesService.putExitTradeMovementOnSerialEntry(entryModel, exitModel);
+        }
+        else
+        {
+            SerialEntryModel lastEntry = this.seriesService.getLastEntryFromSeries(botModel);
+            this.seriesService.putExitTradeMovementOnSerialEntry( entryModel, close, lastEntry );
+        }
+
 
     }
 

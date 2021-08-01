@@ -14,11 +14,11 @@ import java.util.UUID;
 @Repository
 public interface SerialEntryRepository extends JpaRepository<SerialEntryModel, UUID> {
 
-    SerialEntryModel findByTime(Instant entryTime);
-
     SerialEntryModel findTopByOrderByTimeDesc();
 
     List<SerialEntryModel> findByBot(BotModel id);
 
     SerialEntryModel findTopByBotOrderByTimeDesc(BotModel bot);
+
+    SerialEntryModel findByTimeAndBot(Instant time, BotModel bot);
 }
