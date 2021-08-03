@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
@@ -116,7 +117,7 @@ public class BinanceAmmountExchanger extends AmmountExchanger {
     }
 
     @Override
-    protected Double getRatio(StockType from, StockType to) {
+    protected BigDecimal getRatio(StockType from, StockType to) {
 
         //TODO: SHOULD BE ALWAYS INVERTED?
         try {
@@ -139,7 +140,7 @@ public class BinanceAmmountExchanger extends AmmountExchanger {
 
                             double price = json.get("price").asDouble();
 
-                            return 1 / price;
+                            return new BigDecimal(1 / price );
                         }
 
                         return null;

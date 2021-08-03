@@ -8,6 +8,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParamConverter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.InjectInConfigParam;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.StringToStockTypeConverter;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,9 +23,9 @@ public class PercentageOfBaseStockAmmountGetter extends EntryAmmountGetter {
     public Double percentage;
 
     @Override
-    public Double get(Wallet wallet) {
+    public BigDecimal get(Wallet wallet) {
 
-        Optional<Double> ammountFound = wallet
+        Optional<BigDecimal> ammountFound = wallet
                 .getStocksToAmmounts()
                 .entrySet()
                 .stream()
@@ -35,7 +36,7 @@ public class PercentageOfBaseStockAmmountGetter extends EntryAmmountGetter {
 
         if(ammountFound.isPresent())
         {
-            return ammountFound.get() * ( this.percentage / 100 );
+            return ammountFound.get().multiply( new BigDecimal( this.percentage / 100 ) );
         }
 
         return null;

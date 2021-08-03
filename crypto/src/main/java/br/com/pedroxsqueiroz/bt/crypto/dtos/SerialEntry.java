@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -28,21 +29,21 @@ public class SerialEntry {
     private Date date;
 
     @CsvBindByName( column = "Abertura", locale = "en-US")
-    private Double opening;
+    private BigDecimal opening;
 
     @CsvBindByName( column = "último", locale = "en-US")
-    private Double closing;
+    private BigDecimal closing;
 
     @CsvBindByName( column = "Máxima", locale = "en-US")
-    private Double max;
+    private BigDecimal max;
 
     @CsvBindByName( column = "Mínima", locale = "en-US")
-    private Double min;
+    private BigDecimal min;
 
     @CsvBindByName( column = "Vol.", locale = "en-US")
-    private Double volume;
+    private BigDecimal volume;
 
     @CsvBindByName( column = "Var%", locale = "en-US")
-    private Double variance;
+    private BigDecimal variance;
 
 }

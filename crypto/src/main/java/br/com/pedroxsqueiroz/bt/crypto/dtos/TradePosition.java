@@ -4,6 +4,7 @@ import com.opencsv.bean.CsvBindByName;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -18,26 +19,26 @@ public class TradePosition {
     private Instant entryTime;
 
     @CsvBindByName( column = "Valor entrada" )
-    private Double entryValue;
+    private BigDecimal entryValue;
 
     @CsvBindByName( column = "Total cotas entrada" )
-    private Double entryAmmount;
+    private BigDecimal entryAmmount;
 
     @CsvBindByName( column = "Data saída")
     private Instant exitTime;
 
     @CsvBindByName( column = "Valor saída")
-    private Double exitValue;
+    private BigDecimal exitValue;
 
     @CsvBindByName( column = "Total cotas saída" )
-    private Double exitAmmount ;
+    private BigDecimal exitAmmount ;
 
     public String[] getEntryRow()
     {
         return new String[]{
                 DateTimeFormatter.ISO_DATE_TIME.format( this.entryTime.atZone( ZoneId.systemDefault() ) ),
-                Double.toString(this.entryValue),
-                Double.toString(this.entryAmmount),
+                this.entryValue.toPlainString(),
+                this.entryAmmount.toPlainString(),
                 "Entrada"
         };
     }
@@ -46,8 +47,8 @@ public class TradePosition {
     {
         return new String[]{
                 DateTimeFormatter.ISO_DATE_TIME.format( this.exitTime.atZone( ZoneId.systemDefault() ) ),
-                Double.toString(this.exitValue),
-                Double.toString(this.exitAmmount),
+                this.exitValue.toPlainString(),
+                this.exitAmmount.toPlainString(),
                 "Saída"
         };
     }

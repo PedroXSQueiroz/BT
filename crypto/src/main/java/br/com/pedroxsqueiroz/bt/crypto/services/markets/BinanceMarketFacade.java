@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
+import java.math.RoundingMode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -138,13 +139,13 @@ public class BinanceMarketFacade extends MarketFacade {
 
     @SneakyThrows
     @Override
-    public TradePosition entryPosition(Double ammount, StockType type) {
+    public TradePosition entryPosition(BigDecimal ammount, StockType type) {
 
         TradePosition newTradePosition = TradePosition
                 .builder()
                 .entryTime(Instant.now())
                 .entryAmmount(ammount)
-                .entryValue(this.exchangeValueRate(type) * ammount)
+                .entryValue( ammount.multiply( this.exchangeValueRate(type) ) )
                 .build();
 
         JsonNode orderResponse = sendOrder(ammount, type, "BUY");
@@ -160,8 +161,8 @@ public class BinanceMarketFacade extends MarketFacade {
         double executedQty = orderResponse.get("executedQty").asDouble();
         double value = orderResponse.get("cummulativeQuoteQty").asDouble();
 
-        newTradePosition.setEntryAmmount( executedQty );
-        newTradePosition.setEntryValue( value );
+        newTradePosition.setEntryAmmount( new BigDecimal( executedQty ) );
+        newTradePosition.setEntryValue( new BigDecimal( value ) );
 
         newTradePosition.setMarketId( orderResponse.get("orderId").asText() );
 
@@ -187,7 +188,7 @@ public class BinanceMarketFacade extends MarketFacade {
     }
     */
 
-    private JsonNode sendOrder(Double ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
+    private JsonNode sendOrder(BigDecimal ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
 
         ObjectMapper serializer = new ObjectMapper();
         String currentStockTypeName = type.getName();
@@ -197,11 +198,15 @@ public class BinanceMarketFacade extends MarketFacade {
         String precisionMask = getPrescisionForStock(currentStockTypeName);
         int decimalNumberCount = precisionMask.split( "[.]" )[1].indexOf('1');
 
+        ammount.setScale(decimalNumberCount, RoundingMode.UP);
+
         Matcher ammountInRangeMatcher = Pattern
                 .compile(String.format("([0-9]*\\.?[0-9]{0,%s})", decimalNumberCount))
-                .matcher(new BigDecimal(ammount).toPlainString());
+                .matcher(ammount.toPlainString());
+
         ammountInRangeMatcher.find();
-        String adjustedAmmount = ammountInRangeMatcher.group(1);
+
+        String adjustedAmmount = ammountInRangeMatcher.group(0);
 
         LOGGER.info( String.format( "Sending %s order with %s ammount of %s to Binance", orderSide, adjustedAmmount, type.getName() ) );
 
@@ -217,7 +222,6 @@ public class BinanceMarketFacade extends MarketFacade {
                 .build();
 
         return HttpClients.createDefault().execute( buyOrderRequest, response -> {
-
 
             InputStream content = response.getEntity().getContent();
 
@@ -276,11 +280,11 @@ public class BinanceMarketFacade extends MarketFacade {
 
     @SneakyThrows
     @Override
-    public TradePosition exitPosition(TradePosition trade, Double ammount, StockType type) {
+    public TradePosition exitPosition(TradePosition trade, BigDecimal ammount, StockType type) {
 
         trade.setExitTime(Instant.now());
         trade.setExitAmmount( ammount );
-        trade.setExitValue( this.exchangeValueRate(type) * ammount );
+        trade.setExitValue( ammount.multiply( this.exchangeValueRate(type)  ) );
 
         JsonNode orderResponse = sendOrder(ammount, type, "SELL");
 
@@ -289,14 +293,14 @@ public class BinanceMarketFacade extends MarketFacade {
         double value = orderResponse.get("cummulativeQuoteQty").asDouble();
 
         trade.setMarketId(orderResponse.get("orderId").asText());
-        trade.setExitAmmount(executedQty);
-        trade.setExitValue(value);
+        trade.setExitAmmount(new BigDecimal( executedQty ));
+        trade.setExitValue(new BigDecimal( value ) );
 
         return trade;
     }
 
     @Override
-    public Double exchangeValueRate(StockType type) {
+    public BigDecimal exchangeValueRate(StockType type) {
 
         //return this.currentIntervaledSerialEntry.getClosing();
 
@@ -321,7 +325,7 @@ public class BinanceMarketFacade extends MarketFacade {
                         InputStream content = response.getEntity().getContent();
                         JsonNode jsonNode = serializer.readTree(content);
 
-                        return jsonNode.get("price").asDouble();
+                        return new BigDecimal( jsonNode.get("price").asDouble() );
 
                     });
 
@@ -378,7 +382,7 @@ public class BinanceMarketFacade extends MarketFacade {
 
                         StockType stockType = new StockType(stockName);
 
-                        wallet.addAmmountToStock( stockType, ammount );
+                        wallet.addAmmountToStock( stockType, new BigDecimal( ammount ) );
 
                     });
 
@@ -406,12 +410,12 @@ public class BinanceMarketFacade extends MarketFacade {
 
     @Override
     public EntryValidator getEntryValidator() {
-        return (trade) -> trade.getEntryAmmount() < this.entryMovementMinAmmount ?
+        return (trade) -> trade.getEntryAmmount().compareTo( new BigDecimal(this.entryMovementMinAmmount) ) == -1  ?
                             new HashMap<Integer, String>(){{
                                 put( 1, String.format(
                                             "Is required unless %s ammount to entry, was provided %s",
                                                 new BigDecimal(entryMovementMinAmmount).toPlainString(),
-                                                new BigDecimal(trade.getEntryAmmount()).toPlainString()
+                                                trade.getEntryAmmount().toPlainString()
                                             )
                                     );
                             }}: null;
@@ -485,11 +489,11 @@ public class BinanceMarketFacade extends MarketFacade {
 
                 }
 
-                double opening = klineRoot.get("o").asDouble();
-                double closing = klineRoot.get("c").asDouble();
-                double max = klineRoot.get("h").asDouble();
-                double min = klineRoot.get("l").asDouble();
-                double volume = klineRoot.get("v").asDouble();
+                BigDecimal opening =    new BigDecimal( klineRoot.get("o").asDouble() );
+                BigDecimal closing =    new BigDecimal( klineRoot.get("c").asDouble() );
+                BigDecimal max =        new BigDecimal( klineRoot.get("h").asDouble() );
+                BigDecimal min =        new BigDecimal( klineRoot.get("l").asDouble() );
+                BigDecimal volume =     new BigDecimal( klineRoot.get("v").asDouble() );
 
                 Date closingDatetime = Date.from(Instant.ofEpochMilli(closingTime));
 

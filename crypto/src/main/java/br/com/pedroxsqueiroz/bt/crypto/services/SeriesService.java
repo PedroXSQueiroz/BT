@@ -13,6 +13,7 @@ import br.com.pedroxsqueiroz.bt.crypto.repositories.TradeMovementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -123,13 +124,13 @@ public class SeriesService {
             TradeMovementModel exit)
     {
 
-        double currentProfit = exit.getValue() - entry.getValue();
+        BigDecimal currentProfit = exit.getValue().subtract( entry.getValue() ) ;
 
-        Double previousPersistedProfit = exit.getProfit();
+        BigDecimal previousPersistedProfit = exit.getProfit();
 
-        Double resultantProfit = Objects.nonNull(previousPersistedProfit) ?
-                previousPersistedProfit + currentProfit :
-                currentProfit;
+        BigDecimal resultantProfit = Objects.nonNull(previousPersistedProfit) ?
+                                        previousPersistedProfit.add( currentProfit ) :
+                                        currentProfit;
 
         exit.setProfit(resultantProfit);
 
@@ -168,7 +169,7 @@ public class SeriesService {
         TradeMovementModel movementModel = TradeMovementModel
                 .builder()
                 .type(TradeMovementTypeEnum.ENTRY)
-                .ammount(trade.getEntryAmmount() )
+                .ammount(  trade.getEntryAmmount() )
                 .serialEntry(entryModel)
                 .value( trade.getEntryValue() )
                 .build();

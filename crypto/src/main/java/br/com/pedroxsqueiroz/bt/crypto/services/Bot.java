@@ -17,6 +17,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopa
 import lombok.experimental.Delegate;
 import org.apache.logging.log4j.util.Strings;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
@@ -160,14 +161,14 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.algorithm.setEntryMethod( (tradePosition) -> {
 
             Wallet wallet = this.marketFacade.getWallet();
-            Double entryAmmount = this.entryAmmountGetter.get(wallet);
+            BigDecimal entryAmmount = this.entryAmmountGetter.get(wallet);
 
             if( Objects.nonNull( this.ammountExchanger ) )
             {
                 entryAmmount = this.ammountExchanger.exchange(entryAmmount);
             }
 
-            tradePosition.setEntryAmmount(entryAmmount);
+            tradePosition.setEntryAmmount( entryAmmount );
 
             EntryValidator entryValidator = this.marketFacade.getEntryValidator();
 
@@ -210,15 +211,14 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.algorithm.setExitMethod( (tradePosition) ->
         {
 
-            Double exchangeValueRate = this.marketFacade.exchangeValueRate(this.type);
+            BigDecimal exchangeValueRate = this.marketFacade.exchangeValueRate(this.type);
 
             List<TradePosition> profitableTrades = this.openendTrades.stream().filter(trade -> {
 
-                Double currentExitAmmount = this.exitAmmountGetter.get(trade);
+                BigDecimal currentExitAmmount = this.exitAmmountGetter.get(trade);
 
-                double currentExitValue = currentExitAmmount * exchangeValueRate;
-                Double profit =     currentExitValue
-                                -   trade.getEntryValue();
+                BigDecimal currentExitValue = currentExitAmmount.multiply( exchangeValueRate );
+                BigDecimal profit =     currentExitValue.subtract(trade.getEntryValue());
 
                 LOGGER.info(String.format("Trade %s Entered with ( ammount:%f, value: %f ) could exit with ( ammount: %f, value: %f, current axchange rate: %f, profit: %f )",
                                                 trade.getMarketId(),
@@ -230,20 +230,25 @@ public class Bot extends Configurable implements Startable, Stopable {
                                                 profit
                                             ));
 
-                return profit > 0D;
+                return  profit.signum() > 0D;
             }).collect(Collectors.toList());
 
-            Double resultantExitAmmount = profitableTrades
-                    .stream()
-                    .mapToDouble(this.exitAmmountGetter::get)
-                    .sum();
+            BigDecimal resultantExitAmmount = profitableTrades
+                                                .stream()
+                                                .map(this.exitAmmountGetter::get)
+                                                .reduce(BigDecimal::add)
+                                                .orElseGet(() -> null);
 
-            tradePosition.setExitAmmount(resultantExitAmmount);
+
+
 
             //TradePosition exitedTrade = this.exitTrade(tradePosition);
 
-            if(profitableTrades.size() > 1)
+            if(!profitableTrades.isEmpty())
             {
+                tradePosition.setExitAmmount( resultantExitAmmount );
+                tradePosition.setExitValue( resultantExitAmmount.multiply(exchangeValueRate) );
+
                 TradePosition exitedTrade = this.marketFacade.exitPosition(tradePosition, resultantExitAmmount, this.type );
 
                 if( Objects.nonNull( this.closeTradeListerners ) )
@@ -280,7 +285,7 @@ public class Bot extends Configurable implements Startable, Stopable {
 
     public TradePosition exitTrade(TradePosition openTrade) {
 
-        Double exitAmmount = this.exitAmmountGetter.get(openTrade);
+        BigDecimal exitAmmount = this.exitAmmountGetter.get(openTrade);
 
         TradePosition trade = this.marketFacade.exitPosition(openTrade, exitAmmount, this.type );
 

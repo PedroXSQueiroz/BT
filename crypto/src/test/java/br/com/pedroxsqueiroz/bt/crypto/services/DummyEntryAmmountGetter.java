@@ -3,11 +3,13 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.InjectInConfigParam;
 
+import java.math.BigDecimal;
+
 @InjectInConfigParam(alias = "dummy")
 public class DummyEntryAmmountGetter extends EntryAmmountGetter {
 
     @Override
-    public Double get(Wallet wallet) {
+    public BigDecimal get(Wallet wallet) {
         return null;
     }
 

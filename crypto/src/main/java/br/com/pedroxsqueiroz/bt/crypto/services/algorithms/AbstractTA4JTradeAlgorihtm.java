@@ -12,6 +12,7 @@ import org.ta4j.core.*;
 import org.ta4j.core.num.DecimalNum;
 import org.ta4j.core.num.Num;
 
+import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
@@ -145,8 +146,8 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
                                     int entryTradeBarIndex = lastTrade.getIndex();
                                     TradePosition entryTradePosition = TradePosition
                                             .builder()
-                                            .entryAmmount( lastTrade.getAmount().doubleValue() )
-                                            .entryValue( lastTrade.getValue().doubleValue() )
+                                            .entryAmmount( new BigDecimal( lastTrade.getAmount().doubleValue() ) )
+                                            .entryValue( new BigDecimal( lastTrade.getValue().doubleValue() ) )
                                             .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
                                             .exitTime( lastBar.getEndTime().toInstant() )
                                             .build();
@@ -201,12 +202,12 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
             int entryTradeBarIndex = lastTrade.getIndex();
             TradePosition entryTradePosition = TradePosition
                     .builder()
-                    .entryAmmount( lastTrade.getAmount().doubleValue() )
-                    .entryValue( lastTrade.getValue().doubleValue() )
+                    .entryAmmount( new BigDecimal( lastTrade.getAmount().doubleValue() ) )
+                    .entryValue( new BigDecimal( lastTrade.getValue().doubleValue() ) )
                     .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
                     .exitTime( lastBar.getEndTime().toInstant() )
-                    .exitAmmount( lastTrade.getAmount().doubleValue() )
-                    .exitValue( lastTrade.getAmount().doubleValue() * lastBar.getClosePrice().doubleValue() )
+                    .exitAmmount( new BigDecimal( lastTrade.getAmount().doubleValue() ) )
+                    .exitValue( new BigDecimal( lastTrade.getAmount().doubleValue() * lastBar.getClosePrice().doubleValue() ) )
                     .build();
 
             //TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );

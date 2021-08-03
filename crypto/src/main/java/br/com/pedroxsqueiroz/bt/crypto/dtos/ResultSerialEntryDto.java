@@ -7,17 +7,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Objects;
 
 @Data
 public class ResultSerialEntryDto extends SerialEntry implements Comparable<ResultSerialEntryDto>{
 
-    private Double ammount;
+    private BigDecimal ammount;
 
     private TradeMovementTypeEnum tradeMovementType;
 
-    private Double profit;
+    private BigDecimal profit;
 
     //@JsonIgnore
     //private ResultSerialEntryDto entryRelatedByTrade;
@@ -63,7 +64,7 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable<Resu
         //this.setProfit( serialEntryModel.get );
     }
 
-    public ResultSerialEntryDto(SerialEntry serialEntry, Double ammount, TradeMovementTypeEnum movementType )
+    public ResultSerialEntryDto(SerialEntry serialEntry, BigDecimal ammount, TradeMovementTypeEnum movementType )
     {
         this(serialEntry);
 

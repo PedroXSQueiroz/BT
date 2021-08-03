@@ -9,6 +9,7 @@ import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
@@ -27,10 +28,10 @@ public class TradeMovementModel {
     private UUID id;
 
     @Column(name = "ammount")
-    private Double ammount;
+    private BigDecimal ammount;
 
     @Column(name = "total_value")
-    private Double value;
+    private BigDecimal value;
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "trade_movement_type")
@@ -45,7 +46,7 @@ public class TradeMovementModel {
     private TradeMovementModel relatedMovement;
 
     @Column(name = "profit")
-    private Double profit;
+    private BigDecimal profit;
 
     @Column(name = "market_id")
     private String marketId;

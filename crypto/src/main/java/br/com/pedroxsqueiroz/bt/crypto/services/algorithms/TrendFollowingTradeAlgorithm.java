@@ -76,10 +76,10 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
                 LOGGER.info("Trading record created");
 
-                boolean isOutOfLimits = rsi.isGreaterThan(DecimalNum.valueOf(this.OVERBOUGHT_THRESHOLD)) ||
-                        rsi.isLessThan(DecimalNum.valueOf(this.OVERSOLD_THRESHOLD));
+                boolean isOutOfLimits = rsi.isLessThan(DecimalNum.valueOf(this.OVERBOUGHT_THRESHOLD)) &&
+                                        rsi.isGreaterThan(DecimalNum.valueOf(this.OVERSOLD_THRESHOLD)) ;
 
-                if( rsi.isGreaterThan(ema) || !isOutOfLimits )
+                if( rsi.isGreaterThan(ema) && !isOutOfLimits )
                 {
                     if(Objects.isNull(lastTrade) || lastTrade.isSell())
                     {
@@ -126,7 +126,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
                 Trade lastTrade = tradingRecord.getLastEntry();
 
-                if(rsi.isLessThan(ema) || isOutOfLimits)
+                if(rsi.isLessThan(ema) && !isOutOfLimits)
                 {
                     if(Objects.nonNull(lastTrade) && lastTrade.isBuy())
                     {

@@ -7,6 +7,7 @@ import org.hibernate.annotations.Type;
 import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -23,35 +24,35 @@ public class SerialEntryViewModel implements Comparable<SerialEntryViewModel> {
     private UUID id;
 
     @Column(name = "max_price")
-    private Double max;
+    private BigDecimal max;
 
     @Column(name = "min_price")
-    private Double min;
+    private BigDecimal min;
 
     @Column(name = "opening_price")
-    private Double opening;
+    private BigDecimal opening;
 
     @Column(name = "closing_price")
-    private Double closing;
+    private BigDecimal closing;
 
     @Column(name = "variance_price")
-    private Double variance;
+    private BigDecimal variance;
 
     @Column(name = "entry_date")
     private Instant time;
 
     @Column(name = "ammount")
-    private Double ammount;
+    private BigDecimal ammount;
 
     @Column(name = "total_value")
-    private Double totalValue;
+    private BigDecimal totalValue;
 
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "trade_movement_type")
     private TradeMovementTypeEnum movementType;
 
     @Column(name = "profit")
-    private Double profit;
+    private BigDecimal profit;
 
     @ManyToOne
     @JoinColumn(name = "id_bot")

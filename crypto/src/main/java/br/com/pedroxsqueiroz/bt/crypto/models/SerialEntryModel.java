@@ -9,6 +9,7 @@ import org.hibernate.annotations.Type;
 import org.jetbrains.annotations.NotNull;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
 import java.util.UUID;
@@ -29,19 +30,19 @@ public class SerialEntryModel implements Comparable<SerialEntryModel>{
     private UUID id;
 
     @Column(name = "max_price")
-    private Double max;
+    private BigDecimal max;
 
     @Column(name = "min_price")
-    private Double min;
+    private BigDecimal min;
 
     @Column(name = "opening_price")
-    private Double opening;
+    private BigDecimal opening;
 
     @Column(name = "closing_price")
-    private Double closing;
+    private BigDecimal closing;
 
     @Column(name = "variance_price")
-    private Double variance;
+    private BigDecimal variance;
 
     @Column(name = "entry_date")
     private Instant time;

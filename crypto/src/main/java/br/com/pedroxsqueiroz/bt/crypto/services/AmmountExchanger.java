@@ -5,6 +5,8 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigu
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import lombok.experimental.Delegate;
 
+import java.math.BigDecimal;
+
 
 public abstract class AmmountExchanger extends Configurable {
 
@@ -12,11 +14,11 @@ public abstract class AmmountExchanger extends Configurable {
 
     protected abstract StockType getTo();
 
-    protected abstract Double getRatio(StockType from, StockType to);
+    protected abstract BigDecimal getRatio(StockType from, StockType to);
 
-    public  Double exchange(Double ammount)
+    public BigDecimal exchange(BigDecimal ammount)
     {
-        return this.getRatio( this.getFrom(), this.getTo() ) * ammount;
+        return this.getRatio( this.getFrom(), this.getTo() ).multiply( ammount );
     }
 
     @Delegate(types = Configurable.class)

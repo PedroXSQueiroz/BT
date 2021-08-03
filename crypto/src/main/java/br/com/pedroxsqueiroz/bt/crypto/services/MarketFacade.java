@@ -8,7 +8,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Finishable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Startable;
 
-import java.io.Closeable;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 
@@ -20,11 +20,11 @@ public abstract class MarketFacade extends Configurable implements Startable, Fi
 
     public abstract List<SerialEntry> fetchNext(StockType type);
 
-    public abstract TradePosition entryPosition(Double ammount, StockType type);
+    public abstract TradePosition entryPosition(BigDecimal ammount, StockType type);
 
-    public abstract TradePosition exitPosition(TradePosition position, Double ammount, StockType type);
+    public abstract TradePosition exitPosition(TradePosition position, BigDecimal ammount, StockType type);
 
-    public abstract Double exchangeValueRate( StockType type );
+    public abstract BigDecimal exchangeValueRate(StockType type );
 
     public abstract Wallet getWallet();
 

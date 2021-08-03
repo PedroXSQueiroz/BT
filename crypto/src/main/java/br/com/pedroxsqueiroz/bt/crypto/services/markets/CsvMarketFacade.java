@@ -5,7 +5,6 @@ import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
-import br.com.pedroxsqueiroz.bt.crypto.services.AmmountExchanger;
 import br.com.pedroxsqueiroz.bt.crypto.services.EntryValidator;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
@@ -19,6 +18,7 @@ import lombok.experimental.Delegate;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
@@ -57,27 +57,27 @@ public class CsvMarketFacade extends MarketFacade {
     }
 
     @Override
-    public TradePosition entryPosition(Double ammount, StockType type) {
+    public TradePosition entryPosition(BigDecimal ammount, StockType type) {
 
         return  TradePosition
                 .builder()
                 .entryTime(this.lastSerialEntry.getDate().toInstant())
                 .entryAmmount(ammount)
-                .entryValue( this.exchangeValueRate(type) * ammount )
+                .entryValue( ammount.multiply( this.exchangeValueRate(type) )  )
                 .build();
     }
 
     @Override
-    public TradePosition exitPosition(TradePosition position, Double ammount, StockType type) {
+    public TradePosition exitPosition(TradePosition position, BigDecimal ammount, StockType type) {
 
         position.setExitAmmount( ammount );
-        position.setExitValue( this.exchangeValueRate(type) * ammount );
+        position.setExitValue( ammount.multiply( this.exchangeValueRate(type) ) );
 
         return position;
     }
 
     @Override
-    public Double exchangeValueRate(StockType type) {
+    public BigDecimal exchangeValueRate(StockType type) {
         return this.lastSerialEntry.getClosing();
     }
 
