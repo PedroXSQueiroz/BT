@@ -271,6 +271,8 @@ public class Bot extends Configurable implements Startable, Stopable {
             return null;
         });
 
+        this.algorithm.setFetchSeriesEntriesOnIntervalMethod( this.marketFacade::fetch );
+
         this.algorithm.setFetchNextSeriesEntryMethod( (stockType) -> {
 
             List<SerialEntry> serialEntries = this.marketFacade.fetchNext(stockType);

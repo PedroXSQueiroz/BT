@@ -28,8 +28,8 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
     private static Logger LOGGER = Logger.getLogger( TrendFollowingTradeAlgorithm.class.getName() );
 
     //@ConfigParamConverter(converters = StringToStockTypeConverter.class)
-    //@ConfigParam(name ="stockType")
-    protected StockType stockType;
+    @ConfigParam(name ="stockType", getFromParent = true)
+    public StockType stockType;
 
     public void setStockType(StockType type)
     {
@@ -68,7 +68,7 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
     protected void addEntriesToSeries(List<SerialEntry> series) {
         series.forEach(serialEntry -> this.barSeries.addBar(
-                serialEntry.getDate().toInstant().atZone(ZoneId.of("UTC")),
+                serialEntry.getDate().toInstant().atZone(ZoneId.systemDefault()),
                 serialEntry.getOpening(),
                 serialEntry.getMax(),
                 serialEntry.getMin(),

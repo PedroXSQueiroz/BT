@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -21,7 +22,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SerialEntry {
+public class SerialEntry implements Comparable<SerialEntry> {
 
     //@CsvCustomBindByName( column = "Data", converter = CsvDateConverter.class)
     @CsvDate("dd.MM.yyyy")
@@ -46,4 +47,8 @@ public class SerialEntry {
     @CsvBindByName( column = "Var%", locale = "en-US")
     private BigDecimal variance;
 
+    @Override
+    public int compareTo(@NotNull SerialEntry serialEntry) {
+        return this.getDate().compareTo(serialEntry.getDate());
+    }
 }

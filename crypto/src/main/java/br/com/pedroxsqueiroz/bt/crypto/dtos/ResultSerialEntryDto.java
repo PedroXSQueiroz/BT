@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Objects;
 
 @Data
-public class ResultSerialEntryDto extends SerialEntry implements Comparable<ResultSerialEntryDto>{
+public class ResultSerialEntryDto extends SerialEntry {
 
     private BigDecimal ammount;
 
@@ -71,13 +71,6 @@ public class ResultSerialEntryDto extends SerialEntry implements Comparable<Resu
         this.setAmmount(ammount);
 
         this.setTradeMovementType(movementType);
-
-    }
-
-    @Override
-    public int compareTo(@NotNull ResultSerialEntryDto o) {
-
-        return this.getDate().compareTo(o.getDate());
 
     }
 

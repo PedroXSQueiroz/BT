@@ -34,11 +34,14 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Configuration
 @Component("binance")
@@ -91,9 +94,11 @@ public class BinanceMarketFacade extends MarketFacade {
         return null;
     }
 
+    @SneakyThrows
     @Override
     public List<SerialEntry> fetch(StockType type, Instant from, Instant to) {
 
+        /*
         List<SerialEntry> serialEntries = new ArrayList<SerialEntry>();
 
         while( !this.serialEntries.isEmpty() )
@@ -117,6 +122,61 @@ public class BinanceMarketFacade extends MarketFacade {
         }
 
         return serialEntries;
+        */
+
+        HttpUriRequest request = this.requestFactory
+                .withRequestParams("symbol", type.getName())
+                .withRequestParams("interval", String.format("%s%s", this.interval, this.intervalUnit) )
+                //.withRequestParams("endTime", Long.toString(to.toEpochMilli()))
+                .withRequestParams("startTime", Long.toString(from.toEpochMilli()))
+                .setup("GET", "klines")
+                .build();
+
+        return HttpClients.createDefault().execute(request, (response) -> {
+
+            if(response.getStatusLine().getStatusCode() == 200)
+            {
+                ObjectMapper serializer = new ObjectMapper();
+
+                InputStream content = response.getEntity().getContent();
+                JsonNode jsonNode = serializer.readTree(content);
+
+                List<SerialEntry> seriesSlice = new ArrayList<SerialEntry>();
+
+                for( JsonNode currentEntryData : jsonNode )
+                {
+                    LOGGER.info(currentEntryData.toPrettyString());
+
+                    SerialEntry currentEntry = new SerialEntry();
+
+                    long dateTimestamp  = currentEntryData.get(SERIES_ENTRY_TIME).asLong();
+                    Instant dateInstant = Instant.ofEpochMilli(dateTimestamp);
+                    java.util.Date date = Date.from(dateInstant);
+                    double opening      = currentEntryData.get(SERIES_ENTRY_OPENING).asDouble();
+                    double max          = currentEntryData.get(SERIES_ENTRY_MAX).asDouble();
+                    double min          = currentEntryData.get(SERIES_ENTRY_MIN).asDouble();
+                    double closing      = currentEntryData.get(SERIES_ENTRY_CLOSING).asDouble();
+                    double volume       = currentEntryData.get(SERIES_ENTRY_VOLUME).asDouble();
+
+                    currentEntry.setDate(date);
+                    currentEntry.setOpening( new BigDecimal( opening ) );
+                    currentEntry.setMax( new BigDecimal( max ) );
+                    currentEntry.setMin( new BigDecimal( min ) );
+                    currentEntry.setClosing( new BigDecimal( closing ) );
+                    currentEntry.setVolume( new BigDecimal( volume ) );
+
+                    LOGGER.info( serializer.writeValueAsString(currentEntry) );
+
+                    seriesSlice.add( currentEntry );
+                }
+
+                return seriesSlice.stream().sorted().collect(Collectors.toList());
+
+            }
+
+            return null;
+        });
+
     }
 
     @Override

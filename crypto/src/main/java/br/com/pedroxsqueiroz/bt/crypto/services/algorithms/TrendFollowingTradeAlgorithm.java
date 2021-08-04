@@ -15,6 +15,8 @@ import org.ta4j.core.num.Num;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -52,6 +54,15 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
         int BAR_COUNT_PER_MINUTE_IN_A_DAY = 1440;
         barSeries.setMaximumBarCount(BAR_COUNT_PER_MINUTE_IN_A_DAY);
+
+        Instant now = Instant.now();
+        Instant start = now.minus(30, ChronoUnit.MINUTES);
+
+        List<SerialEntry> seriesUntilNow = this.fecthSeriesOnInterval(this.stockType, start, now );
+
+        seriesUntilNow.remove(seriesUntilNow.size() - 1);
+
+        this.addEntriesToSeries(seriesUntilNow);
 
         super.prepare();
     }

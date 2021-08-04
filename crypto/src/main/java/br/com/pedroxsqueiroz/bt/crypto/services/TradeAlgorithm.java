@@ -12,6 +12,7 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Start
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopable;
 import lombok.experimental.Delegate;
 
+import java.time.Instant;
 import java.util.List;
 
 public abstract class TradeAlgorithm extends Configurable implements Startable, Stopable, Finishable {
@@ -69,6 +70,23 @@ public abstract class TradeAlgorithm extends Configurable implements Startable, 
     protected List<SerialEntry> fetchNextSeriesEntry(StockType type)
     {
         return this.fetchSeriesEntry.fetchNext(type);
+    }
+
+    public interface FetchSeriesEntriesOnIntervalMethod
+    {
+        List<SerialEntry> fetch(StockType type, Instant from, Instant to);
+    }
+
+    private FetchSeriesEntriesOnIntervalMethod fetchSeriesOnInterval;
+
+    public void setFetchSeriesEntriesOnIntervalMethod(FetchSeriesEntriesOnIntervalMethod method)
+    {
+        this.fetchSeriesOnInterval = method;
+    }
+
+    protected List<SerialEntry> fecthSeriesOnInterval(StockType type, Instant from, Instant to)
+    {
+        return this.fetchSeriesOnInterval.fetch(type, from, to);
     }
 
     /*-----------------------------------------------------------------------------------------
