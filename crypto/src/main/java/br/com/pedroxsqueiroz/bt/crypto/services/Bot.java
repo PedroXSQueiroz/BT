@@ -202,6 +202,8 @@ public class Bot extends Configurable implements Startable, Stopable {
                 this.openTradeListerners.forEach(listener -> listener.callback(trade) );
             }
 
+            trade.setEntrySerialEntry(tradePosition.getEntrySerialEntry());
+
             this.openendTrades.add(trade);
 
             return trade;
@@ -212,8 +214,17 @@ public class Bot extends Configurable implements Startable, Stopable {
         {
 
             BigDecimal exchangeValueRate = this.marketFacade.exchangeValueRate(this.type);
+            BigDecimal currentClosingPrice = tradePosition.getExitSerialEntry().getClosing();
 
             List<TradePosition> profitableTrades = this.openendTrades.stream().filter(trade -> {
+
+                BigDecimal openedTradeClosingPrice = trade.getEntrySerialEntry().getClosing();
+                boolean currentClosingPriceIsGreaterThanOpenenTradeClosingPrice = currentClosingPrice.compareTo(openedTradeClosingPrice) < 0;
+
+                if(currentClosingPriceIsGreaterThanOpenenTradeClosingPrice)
+                {
+                    return false;
+                }
 
                 BigDecimal currentExitAmmount = this.exitAmmountGetter.get(trade);
 

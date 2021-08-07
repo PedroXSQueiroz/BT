@@ -33,6 +33,10 @@ public class TradePosition {
     @CsvBindByName( column = "Total cotas saída" )
     private BigDecimal exitAmmount ;
 
+    private SerialEntry entrySerialEntry;
+
+    private SerialEntry exitSerialEntry;
+
     public String[] getEntryRow()
     {
         return new String[]{

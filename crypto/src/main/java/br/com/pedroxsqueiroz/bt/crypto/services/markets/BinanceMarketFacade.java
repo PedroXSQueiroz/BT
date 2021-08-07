@@ -47,6 +47,16 @@ import java.util.stream.Collectors;
 @Component("binance")
 public class BinanceMarketFacade extends MarketFacade {
 
+    /*-----------------------------------------------------------------------------------
+    STOCKYTYPE METADATA
+    -------------------------------------------------------------------------------------*/
+
+    private int stockyTypePrecision;
+
+    /*-----------------------------------------------------------------------------------
+    END OF STOCKYTYPE METADATA
+    -------------------------------------------------------------------------------------*/
+
     BlockingQueue<SerialEntry> serialEntries;
 
     //FIXME: BETTER NAME AND BETTER LOGIC
@@ -221,8 +231,10 @@ public class BinanceMarketFacade extends MarketFacade {
         double executedQty = orderResponse.get("executedQty").asDouble();
         double value = orderResponse.get("cummulativeQuoteQty").asDouble();
 
-        newTradePosition.setEntryAmmount( new BigDecimal( executedQty ) );
-        newTradePosition.setEntryValue( new BigDecimal( value ) );
+        BigDecimal entryAmmount = new BigDecimal(executedQty);
+        entryAmmount.setScale(this.stockyTypePrecision, RoundingMode.HALF_UP );
+        newTradePosition.setEntryAmmount(entryAmmount);
+        newTradePosition.setEntryValue( new BigDecimal( value ));
 
         newTradePosition.setMarketId( orderResponse.get("orderId").asText() );
 
@@ -255,13 +267,10 @@ public class BinanceMarketFacade extends MarketFacade {
 
         Long serverTime = this.getCurrentServerTime();
 
-        String precisionMask = getPrescisionForStock(currentStockTypeName);
-        int decimalNumberCount = precisionMask.split( "[.]" )[1].indexOf('1');
-
-        ammount.setScale(decimalNumberCount, RoundingMode.UP);
+        ammount.setScale(this.stockyTypePrecision, RoundingMode.UP);
 
         Matcher ammountInRangeMatcher = Pattern
-                .compile(String.format("([0-9]*\\.?[0-9]{0,%s})", decimalNumberCount))
+                .compile(String.format("([0-9]*\\.?[0-9]{0,%s})", this.stockyTypePrecision))
                 .matcher(ammount.toPlainString());
 
         ammountInRangeMatcher.find();
@@ -353,8 +362,10 @@ public class BinanceMarketFacade extends MarketFacade {
         double value = orderResponse.get("cummulativeQuoteQty").asDouble();
 
         trade.setMarketId(orderResponse.get("orderId").asText());
-        trade.setExitAmmount(new BigDecimal( executedQty ));
-        trade.setExitValue(new BigDecimal( value ) );
+        BigDecimal exitAmmount = new BigDecimal(executedQty);
+        exitAmmount.setScale(this.stockyTypePrecision, RoundingMode.HALF_UP);
+        trade.setExitAmmount(exitAmmount);
+        trade.setExitValue(new BigDecimal( value ));
 
         return trade;
     }
@@ -581,6 +592,7 @@ public class BinanceMarketFacade extends MarketFacade {
 
     }
 
+    @SneakyThrows
     @Override
     public void start() throws ImpossibleToStartException {
 
@@ -620,6 +632,8 @@ public class BinanceMarketFacade extends MarketFacade {
 
             } ).start();
 
+            String precisionMask = this.getPrescisionForStock(this.currentStockType.getName());
+            this.stockyTypePrecision = precisionMask.split( "[.]" )[1].indexOf('1') + 1;
 
 
         /*

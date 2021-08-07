@@ -52,7 +52,7 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
         rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
         emaIndicator = new EMAIndicator(rsiIndicator, 3);
 
-        int BAR_COUNT_PER_MINUTE_IN_A_DAY = 1440;
+        int BAR_COUNT_PER_MINUTE_IN_A_DAY = 120;
         barSeries.setMaximumBarCount(BAR_COUNT_PER_MINUTE_IN_A_DAY);
 
         Instant now = Instant.now();

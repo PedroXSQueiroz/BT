@@ -106,7 +106,9 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
                         TradePosition enteredTradePosition = this.entryPosition(
                                 TradePosition
                                         .builder()
-                                        .entryTime( lastBar.getEndTime().toInstant() ).build()
+                                        .entryTime( lastBar.getEndTime().toInstant() )
+                                        .entrySerialEntry( serialEntries.get(0) )
+                                        .build()
                         );
 
                         if( Objects.nonNull( enteredTradePosition ) )
@@ -150,6 +152,7 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
                                             .entryValue( new BigDecimal( lastTrade.getValue().doubleValue() ) )
                                             .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
                                             .exitTime( lastBar.getEndTime().toInstant() )
+                                            .exitSerialEntry( serialEntries.get(0) )
                                             .build();
 
                                     TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
