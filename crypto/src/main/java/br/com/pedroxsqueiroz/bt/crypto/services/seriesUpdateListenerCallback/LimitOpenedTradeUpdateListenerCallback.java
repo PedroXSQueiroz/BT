@@ -41,6 +41,8 @@ public class LimitOpenedTradeUpdateListenerCallback extends SeriesUpdateListener
         Instant now = Instant.now();
         Instant limit = now.minus(this.interval, this.intervalType);
 
+        SerialEntry lastTrade = entries.get(0);
+
         trades.stream().filter( currentTrade -> {
             Instant tradeTime = currentTrade.getSerialEntry().getTime();
             return tradeTime.isBefore(limit);
@@ -50,6 +52,7 @@ public class LimitOpenedTradeUpdateListenerCallback extends SeriesUpdateListener
                     .builder()
                     .entryAmmount( lossTrade.getAmmount() )
                     .entryTime( lossTrade.getSerialEntry().getTime() )
+                    .exitSerialEntry(lastTrade)
                     .build();
 
             bot.exitTrade(position);

@@ -219,29 +219,31 @@ public class Bot extends Configurable implements Startable, Stopable {
             List<TradePosition> profitableTrades = this.openendTrades.stream().filter(trade -> {
 
                 BigDecimal openedTradeClosingPrice = trade.getEntrySerialEntry().getClosing();
-                boolean currentClosingPriceIsGreaterThanOpenenTradeClosingPrice = currentClosingPrice.compareTo(openedTradeClosingPrice) < 0;
+                boolean currentClosingPriceIsGreaterThanOpenenTradeClosingPrice = currentClosingPrice.compareTo(openedTradeClosingPrice) > 0;
 
                 if(currentClosingPriceIsGreaterThanOpenenTradeClosingPrice)
                 {
-                    return false;
+                    BigDecimal currentExitAmmount = this.exitAmmountGetter.get(trade);
+
+                    BigDecimal currentExitValue = currentExitAmmount.multiply( exchangeValueRate );
+                    BigDecimal profit =     currentExitValue.subtract(trade.getEntryValue());
+
+                    LOGGER.info(String.format("Trade %s Entered with ( ammount:%f, value: %f ) could exit with ( ammount: %f, value: %f, current axchange rate: %f, profit: %f )",
+                            trade.getMarketId(),
+                            trade.getEntryAmmount(),
+                            trade.getEntryValue(),
+                            currentExitAmmount,
+                            currentExitValue,
+                            exchangeValueRate,
+                            profit
+                    ));
+
+                    return  profit.signum() > 0D;
+
                 }
 
-                BigDecimal currentExitAmmount = this.exitAmmountGetter.get(trade);
+                return false;
 
-                BigDecimal currentExitValue = currentExitAmmount.multiply( exchangeValueRate );
-                BigDecimal profit =     currentExitValue.subtract(trade.getEntryValue());
-
-                LOGGER.info(String.format("Trade %s Entered with ( ammount:%f, value: %f ) could exit with ( ammount: %f, value: %f, current axchange rate: %f, profit: %f )",
-                                                trade.getMarketId(),
-                                                trade.getEntryAmmount(),
-                                                trade.getEntryValue(),
-                                                currentExitAmmount,
-                                                currentExitValue,
-                                                exchangeValueRate,
-                                                profit
-                                            ));
-
-                return  profit.signum() > 0D;
             }).collect(Collectors.toList());
 
             BigDecimal resultantExitAmmount = profitableTrades
