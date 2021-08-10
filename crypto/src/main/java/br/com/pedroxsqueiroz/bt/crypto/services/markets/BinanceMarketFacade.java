@@ -234,9 +234,11 @@ public class BinanceMarketFacade extends MarketFacade {
         BigDecimal entryAmmount = new BigDecimal(executedQty);
         entryAmmount.setScale(this.stockyTypePrecision, RoundingMode.HALF_UP );
         newTradePosition.setEntryAmmount(entryAmmount);
-        newTradePosition.setEntryValue( new BigDecimal( value ));
+        BigDecimal entryValue = new BigDecimal(value);
+        entryValue.setScale(this.stockyTypePrecision, RoundingMode.HALF_UP);
+        newTradePosition.setEntryValue(entryValue);
 
-        newTradePosition.setMarketId( orderResponse.get("orderId").asText() );
+        newTradePosition.setMarketId( orderResponse.get("orderId").asText());
 
         return newTradePosition;
 
@@ -365,7 +367,9 @@ public class BinanceMarketFacade extends MarketFacade {
         BigDecimal exitAmmount = new BigDecimal(executedQty);
         exitAmmount.setScale(this.stockyTypePrecision, RoundingMode.HALF_UP);
         trade.setExitAmmount(exitAmmount);
-        trade.setExitValue(new BigDecimal( value ));
+        BigDecimal exitValue = new BigDecimal(value);
+        exitValue.setScale(this.stockyTypePrecision, RoundingMode.HALF_UP);
+        trade.setExitValue(exitValue);
 
         return trade;
     }
