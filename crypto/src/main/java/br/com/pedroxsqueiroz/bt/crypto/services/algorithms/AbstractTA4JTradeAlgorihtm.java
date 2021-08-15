@@ -56,8 +56,11 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
     @Override
     protected void prepare() {
 
+        /*
         List<SerialEntry> series   = this.fetchNextSeriesEntry(this.stockType);
         addEntriesToSeries(series);
+        */
+
 
         this.strategy = new BaseStrategy(this.getEntryRule(), this.getExitRule());
 

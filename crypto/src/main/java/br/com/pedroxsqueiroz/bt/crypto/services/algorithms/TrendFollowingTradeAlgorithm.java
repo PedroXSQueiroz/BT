@@ -60,7 +60,10 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
         List<SerialEntry> seriesUntilNow = this.fecthSeriesOnInterval(this.stockType, start, now );
 
-        seriesUntilNow.remove(seriesUntilNow.size() - 1);
+        if(!seriesUntilNow.isEmpty())
+        {
+            seriesUntilNow.remove(seriesUntilNow.size() - 1);
+        }
 
         this.addEntriesToSeries(seriesUntilNow);
 

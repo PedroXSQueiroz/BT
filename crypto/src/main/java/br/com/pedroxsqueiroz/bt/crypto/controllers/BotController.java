@@ -1,6 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.controllers;
 
 import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.BackTestResult;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
@@ -39,15 +40,36 @@ public class BotController {
             throws  ImpossibleToStartException,
                     InterruptedException {
 
-        List<ResultSerialEntryDto> backtest = this.botService.backtest(botParamsDto);
+        this.addDBCallbacksToParams(botParamsDto);
 
-        return new ResponseEntity(backtest, HttpStatus.OK);
+        Bot bot = this.botService.create(botParamsDto);
+
+        //TODO:ADD DEFAULT OBSERVERS FOR CHARTS
+        UUID botId = this.botService.register(bot);
+        bot.setId(botId);
+
+        BackTestResult result = bot.run();
+
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @PostMapping("/")
     @ResponseBody
     public ResponseEntity createBot(@RequestBody Map<String, Object> botParamsDto)
     {
+        addDBCallbacksToParams(botParamsDto);
+
+        Bot bot = this.botService.create(botParamsDto);
+
+        //TODO:ADD DEFAULT OBSERVERS FOR CHARTS
+        UUID botId = this.botService.register(bot);
+
+        bot.setId(botId);
+
+        return new ResponseEntity(botId, HttpStatus.OK);
+    }
+
+    private void addDBCallbacksToParams(Map<String, Object> botParamsDto) {
         String[] defaultOpenTradeListener = {"dbOpenTradeCallback"};
         botParamsDto.put("openTradeListener",
                 botParamsDto.containsKey("openTradeListener") ?
@@ -80,15 +102,6 @@ public class BotController {
                 defaultUpdateSeriesListener;
 
         botParamsDto.put("seriesUpdateListeners", updateSeriesListener);
-
-        Bot bot = this.botService.create(botParamsDto);
-
-        //TODO:ADD DEFAULT OBSERVERS FOR CHARTS
-        UUID botId = this.botService.register(bot);
-
-        bot.setId(botId);
-
-        return new ResponseEntity(botId, HttpStatus.OK);
     }
 
     @Autowired

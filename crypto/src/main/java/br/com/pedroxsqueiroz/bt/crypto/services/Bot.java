@@ -1,12 +1,8 @@
 package br.com.pedroxsqueiroz.bt.crypto.services;
 
-import br.com.pedroxsqueiroz.bt.crypto.dtos.Wallet;
+import br.com.pedroxsqueiroz.bt.crypto.dtos.*;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
-import br.com.pedroxsqueiroz.bt.crypto.services.markets.BinanceMarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.*;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.TradePosition;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigParam;
@@ -16,10 +12,17 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Start
 import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopable;
 import lombok.experimental.Delegate;
 import org.apache.logging.log4j.util.Strings;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -115,8 +118,21 @@ public class Bot extends Configurable implements Startable, Stopable {
             NameToUpdateSeriesListenerCallbackConverter.class
 
     })
+
     @ConfigParam(name = "seriesUpdateListeners")
     public List<SeriesUpdateListenerCallback> seriesUpdateListeners;
+
+    @ConfigParamConverter(converters = StringToInstantConverter.class)
+    @ConfigParam(name = "startInterval")
+    public Instant startInterval;
+
+    @ConfigParamConverter(converters = StringToInstantConverter.class)
+    @ConfigParam(name = "endInterval")
+    public Instant endInterval;
+
+    @ConfigParam(name = "initialAmmount")
+    public Double initialAmmount;
+
 
     public void addSeriesUpdateTradeListener(SeriesUpdateListenerCallback listener)
     {
@@ -131,7 +147,7 @@ public class Bot extends Configurable implements Startable, Stopable {
     @Override
     public void start() throws ImpossibleToStartException {
 
-        this.putCallbacksToAlgorithm();
+        this.putLiveCallbacksToAlgorithm();
 
         this.marketFacade.start();
 
@@ -145,16 +161,248 @@ public class Bot extends Configurable implements Startable, Stopable {
 
     }
 
-    public void run(Instant from, Instant to)
-    {
-        this.putCallbacksToAlgorithm();
+    public BackTestResult run() throws ImpossibleToStartException {
+
+        Wallet testWallet = new Wallet();
+        testWallet.putAmmountToStock( this.type, new BigDecimal(this.initialAmmount) );
+        Wallet comparingWallet = new Wallet();
+        comparingWallet.putAmmountToStock( this.type, new BigDecimal(this.initialAmmount) );
+
+        AtomicInteger openedTradesCount = new AtomicInteger(0);
+        AtomicInteger closedTradesCount = new AtomicInteger(0);
+
+        this.putBackTestCallbacksToAlgorithm(testWallet, comparingWallet, openedTradesCount, closedTradesCount);
 
         this.algorithm.prepare();
+
+        ArrayBlockingQueue<SerialEntry> processingEntriesQueue = new ArrayBlockingQueue<>(1);
+        AtomicBoolean isAlive = new AtomicBoolean(true);
+
+        SerialEntry finalEntry = new SerialEntry();
+
+        AtomicReference<SerialEntry> firstEntry = new AtomicReference<>();
+        AtomicReference<SerialEntry> lastEntry = new AtomicReference<>();
+
+        this.addSeriesUpdateTradeListener(new SeriesUpdateListenerCallback() {
+            @Override
+            public void callback(List<SerialEntry> entries) {
+
+                if( Objects.isNull( firstEntry.get() ) )
+                {
+                    //DEFINE BETTER CRIERIA
+                    firstEntry.set( entries.get(0) );
+                }
+
+                if( Objects.isNull(entries) || entries.isEmpty())
+                {
+                    try {
+                        isAlive.set(false);
+                        processingEntriesQueue.put(finalEntry);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else
+                {
+                    for(SerialEntry currentEntry : entries)
+                    {
+                        try {
+                            processingEntriesQueue.put(currentEntry);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+
+            }
+        });
+
+        Thread thread = new Thread(() -> {
+            try {
+                this.algorithm.start();
+            } catch (ImpossibleToStartException e) {
+                e.printStackTrace();
+            }
+        });
+        thread.start();
+
+        try
+        {
+            SerialEntry currentEntry = null;
+
+            while( !( currentEntry = processingEntriesQueue.take() ).equals(finalEntry) )
+            {
+                LOGGER.info("Istill processing");
+                lastEntry.set(currentEntry);
+            }
+
+            thread.interrupt();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        BackTestResult backTestResult = new BackTestResult();
+
+        BigDecimal initialAmmountBD = new BigDecimal(this.initialAmmount);
+        BigDecimal initialValue = getExchangeValueFromCurrentSerialEntry(firstEntry).multiply( initialAmmountBD );
+        backTestResult.setInitialAmmount(initialAmmountBD);
+        backTestResult.setInitialValue(initialValue);
+
+        BigDecimal finalAccumulatedValue = testWallet.getAmmountsOfStock(this.type);
+        BigDecimal finalExchange = getExchangeValueFromCurrentSerialEntry(lastEntry);
+        BigDecimal finalValue = finalExchange.multiply(finalAccumulatedValue);
+        backTestResult.setFinalAmmount(finalAccumulatedValue);
+        backTestResult.setFinalValue(finalValue);
+
+
+        BigDecimal initialComparingAmmount = initialAmmountBD.multiply(getExchangeValueFromCurrentSerialEntry(firstEntry));
+        BigDecimal finalComparingValue = initialComparingAmmount.multiply(lastEntry.get().getClosing());
+        backTestResult.setComparingFinalValue(finalComparingValue);
+
+        backTestResult.setOpnenedTradesCount(openedTradesCount.get());
+        backTestResult.setClosedTradesCount(closedTradesCount.get());
+
+        return backTestResult;
+
     }
 
     private List<TradePosition> openendTrades;
 
-    private void putCallbacksToAlgorithm() {
+    private void putBackTestCallbacksToAlgorithm(Wallet testWallet, Wallet comparingWallet, AtomicInteger openedTradesCount, AtomicInteger closedTradesCount ) {
+
+        this.openendTrades = new ArrayList<TradePosition>();
+
+        List<SerialEntry> entries = this.marketFacade.fetch(
+                this.type,
+                this.startInterval,
+                this.endInterval)
+            .stream()
+            .sorted()
+            .collect(Collectors.toList());
+
+        AtomicInteger currentEntryIndex = new AtomicInteger(0);
+        AtomicReference<SerialEntry> currentEntry = new AtomicReference<>();
+
+        this.addOpenTradeListener( trade -> {
+            openedTradesCount.set( openedTradesCount.get() + 1 );
+        });
+
+        this.addCloseTradeListener( ( opended, closed ) -> {
+            closedTradesCount.set( closedTradesCount.get() + 1 );
+        });
+
+        this.algorithm.setEntryMethod( tradePosition -> {
+
+            BigDecimal entryAmmountBase = this.entryAmmountGetter.get(testWallet);
+
+            BigDecimal exchangeRate = getExchangeValueFromCurrentSerialEntry(currentEntry);
+            BigDecimal entryAmmountTarget = entryAmmountBase.multiply( exchangeRate );
+
+            tradePosition.setEntryAmmount( entryAmmountTarget );
+            tradePosition.setEntryValue( entryAmmountBase );
+            tradePosition.setMarketId(UUID.randomUUID().toString());
+
+            BigDecimal currentAmmount = testWallet.getAmmountsOfStock(this.type);
+            BigDecimal remainingAmmount = currentAmmount.subtract(entryAmmountBase);
+
+            if(remainingAmmount.signum() >= 0)
+            {
+                testWallet.putAmmountToStock( this.type, remainingAmmount );
+
+                if( Objects.nonNull(this.openTradeListerners) )
+                {
+                    this.openTradeListerners.forEach(listener -> listener.callback(tradePosition) );
+                }
+
+                openendTrades.add(tradePosition);
+
+                return tradePosition;
+            }
+
+            return null;
+
+        });
+
+        this.algorithm.setExitMethod( tradePosition -> {
+
+            BigDecimal currentClosing = currentEntry.get().getClosing();
+            BigDecimal exchangeValueRate = getExchangeValueFromCurrentSerialEntry(currentEntry);
+
+            List<TradePosition> profitableTrades = this.getProfitableTradePositions(currentClosing, currentClosing);
+
+            if(!profitableTrades.isEmpty())
+            {
+
+                BigDecimal resultantExitAmmount = profitableTrades
+                        .stream()
+                        .map(this.exitAmmountGetter::get)
+                        .reduce(BigDecimal::add)
+                        .get();
+
+                tradePosition.setExitAmmount( resultantExitAmmount );
+                tradePosition.setExitValue( resultantExitAmmount.multiply(exchangeValueRate) );
+                tradePosition.setMarketId(UUID.randomUUID().toString());
+
+                BigDecimal baseResultantAmmount = resultantExitAmmount.multiply(currentClosing);
+
+                BigDecimal currentTotalAmmount = testWallet.getAmmountsOfStock(this.type).add(baseResultantAmmount);
+                testWallet.putAmmountToStock(this.type, currentTotalAmmount);
+
+                /*
+                tradePosition.setExitAmmount(currentTotalAmmount);
+                tradePosition.setExitValue(currentTotalAmmount.multiply( currentClosing ));
+                */
+
+                if(Objects.nonNull(this.closeTradeListerners))
+                {
+                    profitableTrades.forEach( openTrade ->
+                            this.closeTradeListerners.forEach( listener -> listener.callback(openTrade, tradePosition) )
+                        );
+                }
+
+
+                this.openendTrades.removeAll(profitableTrades);
+
+                return tradePosition;
+                
+            }
+            
+            return null;
+        });
+
+        this.algorithm.setFetchNextSeriesEntryMethod( stockType -> {
+            int currentIndex = currentEntryIndex.getAndIncrement();
+
+            final List<SerialEntry> fetchedEntries = new ArrayList<SerialEntry>();
+
+            if(currentIndex < entries.size())
+            {
+                currentEntry.set(entries.get(currentIndex));
+                fetchedEntries.addAll(new ArrayList<>() {{ add( currentEntry.get() ); }});
+            }
+
+            if (Objects.nonNull(this.seriesUpdateListeners)) {
+                this.seriesUpdateListeners.forEach(listener -> listener.callback(fetchedEntries));
+            }
+
+            return fetchedEntries;
+        });
+
+        this.algorithm.setFetchSeriesEntriesOnIntervalMethod( (type, from, end) -> new ArrayList<SerialEntry>(){{}} );
+
+    }
+
+    @NotNull
+    private BigDecimal getExchangeValueFromCurrentSerialEntry(AtomicReference<SerialEntry> currentEntry) {
+        BigDecimal divisor = new BigDecimal(1.0D);
+        divisor.setScale(10);
+        BigDecimal exchangeRate = divisor.divide(currentEntry.get().getClosing(), 10, RoundingMode.HALF_UP);
+        return exchangeRate;
+    }
+
+    private void putLiveCallbacksToAlgorithm() {
 
         this.openendTrades = new ArrayList<TradePosition>();
 
@@ -197,6 +445,8 @@ public class Bot extends Configurable implements Startable, Stopable {
                 return null;
             }
 
+            //trade.setMarketId(UUID.randomUUID().toString());
+
             if( Objects.nonNull(this.openTradeListerners) )
             {
                 this.openTradeListerners.forEach(listener -> listener.callback(trade) );
@@ -216,35 +466,7 @@ public class Bot extends Configurable implements Startable, Stopable {
             BigDecimal exchangeValueRate = this.marketFacade.exchangeValueRate(this.type);
             BigDecimal currentClosingPrice = tradePosition.getExitSerialEntry().getClosing();
 
-            List<TradePosition> profitableTrades = this.openendTrades.stream().filter(trade -> {
-
-                BigDecimal openedTradeClosingPrice = trade.getEntrySerialEntry().getClosing();
-                boolean currentClosingPriceIsGreaterThanOpenenTradeClosingPrice = currentClosingPrice.compareTo(openedTradeClosingPrice) > 0;
-
-                if(currentClosingPriceIsGreaterThanOpenenTradeClosingPrice)
-                {
-                    BigDecimal currentExitAmmount = this.exitAmmountGetter.get(trade);
-
-                    BigDecimal currentExitValue = currentExitAmmount.multiply( exchangeValueRate );
-                    BigDecimal profit =     currentExitValue.subtract(trade.getEntryValue());
-
-                    LOGGER.info(String.format("Trade %s Entered with ( ammount:%f, value: %f ) could exit with ( ammount: %f, value: %f, current axchange rate: %f, profit: %f )",
-                            trade.getMarketId(),
-                            trade.getEntryAmmount(),
-                            trade.getEntryValue(),
-                            currentExitAmmount,
-                            currentExitValue,
-                            exchangeValueRate,
-                            profit
-                    ));
-
-                    return  profit.signum() > 0D;
-
-                }
-
-                return false;
-
-            }).collect(Collectors.toList());
+            List<TradePosition> profitableTrades = getProfitableTradePositions(exchangeValueRate, currentClosingPrice);
 
             BigDecimal resultantExitAmmount = profitableTrades
                                                 .stream()
@@ -263,6 +485,8 @@ public class Bot extends Configurable implements Startable, Stopable {
                 tradePosition.setExitValue( resultantExitAmmount.multiply(exchangeValueRate) );
 
                 TradePosition exitedTrade = this.marketFacade.exitPosition(tradePosition, resultantExitAmmount, this.type );
+
+                //exitedTrade.setMarketId(UUID.randomUUID().toString());
 
                 if( Objects.nonNull( this.closeTradeListerners ) )
                 {
@@ -296,6 +520,40 @@ public class Bot extends Configurable implements Startable, Stopable {
 
             return serialEntries;
         });
+    }
+
+    private List<TradePosition> getProfitableTradePositions(BigDecimal exchangeValueRate, BigDecimal currentClosingPrice) {
+        
+        List<TradePosition> profitableTrades = this.openendTrades.stream().filter(trade -> {
+
+            BigDecimal openedTradeClosingPrice = trade.getEntrySerialEntry().getClosing();
+            boolean currentClosingPriceIsGreaterThanOpenenTradeClosingPrice = currentClosingPrice.compareTo(openedTradeClosingPrice) > 0;
+
+            if(currentClosingPriceIsGreaterThanOpenenTradeClosingPrice)
+            {
+                BigDecimal currentExitAmmount = this.exitAmmountGetter.get(trade);
+
+                BigDecimal currentExitValue = currentExitAmmount.multiply(exchangeValueRate);
+                BigDecimal profit =     currentExitValue.subtract(trade.getEntryValue());
+
+                LOGGER.info(String.format("Trade %s Entered with ( ammount:%f, value: %f ) could exit with ( ammount: %f, value: %f, current axchange rate: %f, profit: %f )",
+                        trade.getMarketId(),
+                        trade.getEntryAmmount(),
+                        trade.getEntryValue(),
+                        currentExitAmmount,
+                        currentExitValue,
+                        exchangeValueRate,
+                        profit
+                ));
+
+                return  profit.signum() > 0D;
+
+            }
+
+            return false;
+
+        }).collect(Collectors.toList());
+        return profitableTrades;
     }
 
     public TradePosition exitTrade(TradePosition openTrade) {

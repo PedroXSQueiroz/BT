@@ -34,8 +34,6 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
@@ -457,7 +455,7 @@ public class BinanceMarketFacade extends MarketFacade {
 
                         StockType stockType = new StockType(stockName);
 
-                        wallet.addAmmountToStock( stockType, new BigDecimal( ammount ) );
+                        wallet.putAmmountToStock( stockType, new BigDecimal( ammount ) );
 
                     });
 

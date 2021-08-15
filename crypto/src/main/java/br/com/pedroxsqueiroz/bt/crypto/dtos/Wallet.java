@@ -12,7 +12,7 @@ public class Wallet {
 
     Map< StockType, BigDecimal> stocksToAmmounts;
 
-    public void addAmmountToStock( StockType stock, BigDecimal ammount )
+    public void putAmmountToStock(StockType stock, BigDecimal ammount )
     {
 
         if(Objects.isNull(this.stocksToAmmounts))
@@ -21,6 +21,11 @@ public class Wallet {
         }
 
         this.stocksToAmmounts.put( stock, ammount );
+    }
+
+    public BigDecimal getAmmountsOfStock( StockType stock )
+    {
+        return this.stocksToAmmounts.get(stock);
     }
 
 }

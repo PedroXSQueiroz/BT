@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
+import java.util.Objects;
 
 @Component("timeIntervalLimitCallback")
 public class LimitOpenedTradeUpdateListenerCallback extends SeriesUpdateListenerCallback {
@@ -41,23 +42,29 @@ public class LimitOpenedTradeUpdateListenerCallback extends SeriesUpdateListener
         Instant now = Instant.now();
         Instant limit = now.minus(this.interval, this.intervalType);
 
-        SerialEntry lastTrade = entries.get(0);
+        if(Objects.nonNull(entries) && !entries.isEmpty())
+        {
 
-        trades.stream().filter( currentTrade -> {
-            Instant tradeTime = currentTrade.getSerialEntry().getTime();
-            return tradeTime.isBefore(limit);
-        }).forEach( lossTrade -> {
+            SerialEntry lastTrade = entries.get(0);
 
-            TradePosition position = TradePosition
-                    .builder()
-                    .entryAmmount( lossTrade.getAmmount() )
-                    .entryTime( lossTrade.getSerialEntry().getTime() )
-                    .exitSerialEntry(lastTrade)
-                    .build();
+            trades.stream().filter( currentTrade -> {
+                Instant tradeTime = currentTrade.getSerialEntry().getTime();
+                return tradeTime.isBefore(limit);
+            }).forEach( lossTrade -> {
 
-            bot.exitTrade(position);
+                TradePosition position = TradePosition
+                        .builder()
+                        .entryAmmount( lossTrade.getAmmount() )
+                        .entryTime( lossTrade.getSerialEntry().getTime() )
+                        .exitSerialEntry(lastTrade)
+                        .build();
 
-        });
+                bot.exitTrade(position);
+
+            });
+
+        }
+
 
     }
 }
