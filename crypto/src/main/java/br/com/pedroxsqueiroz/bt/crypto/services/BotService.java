@@ -26,6 +26,10 @@ public class BotService {
     @Autowired
     private ConfigurableParamsUtils configurableParamsUtils;
 
+    //FIXME: THIS SHOULD NOT BE NECESSARY
+    @Autowired
+    private SeriesService seriesService;
+
     @Autowired
     private BotRepository botRepository;
 
@@ -125,6 +129,10 @@ public class BotService {
     public Bot create(Map<String, Object> botParamsDto) {
 
         Bot bot = new Bot();
+
+        //FIXME: THIS SHOULD NOT BE NECESSARY
+        bot.setSeriesService(this.seriesService);
+        bot.setBotService(this);
 
         Map<String, Object> resolvedBotParams = this.configurableParamsUtils
                 .extractConfigParamRawValuesMap(botParamsDto, bot);

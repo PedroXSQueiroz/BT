@@ -24,4 +24,6 @@ public class BackTestResult {
 
     private int closedTradesCount;
 
+    private int forcedClosedTradesCount;
+
 }

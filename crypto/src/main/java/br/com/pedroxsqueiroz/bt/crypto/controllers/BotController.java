@@ -1,9 +1,6 @@
 package br.com.pedroxsqueiroz.bt.crypto.controllers;
 
-import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.BackTestResult;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.services.Bot;
@@ -48,7 +45,7 @@ public class BotController {
         UUID botId = this.botService.register(bot);
         bot.setId(botId);
 
-        BackTestResult result = bot.run();
+        BackTestResult result = bot.test();
 
         return new ResponseEntity(result, HttpStatus.OK);
     }

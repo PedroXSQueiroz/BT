@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,7 +31,18 @@ public class DBPersistenceSeriesUpdateListenerCallback extends SeriesUpdateListe
 
         Bot bot = (Bot) this.getParent();
 
-        entries.forEach( currentEntry -> this.seriesService.addEntryToSeries( bot.getId(), currentEntry ) );
+        if(Objects.nonNull(entries))
+        {
+            entries.forEach( currentEntry -> {
+
+                if( Objects.nonNull( currentEntry ) )
+                {
+                    this.seriesService.addEntryToSeries( bot.getId(), currentEntry );
+                }
+
+            });
+        }
+
     }
 
 }

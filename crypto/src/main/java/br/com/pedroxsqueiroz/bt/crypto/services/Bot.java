@@ -2,6 +2,8 @@ package br.com.pedroxsqueiroz.bt.crypto.services;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.*;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
+import br.com.pedroxsqueiroz.bt.crypto.models.BotModel;
+import br.com.pedroxsqueiroz.bt.crypto.models.SerialEntryModel;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.*;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.AnnotadedFieldsConfigurer;
@@ -13,10 +15,18 @@ import br.com.pedroxsqueiroz.bt.crypto.utils.continuos_processors_commands.Stopa
 import lombok.experimental.Delegate;
 import org.apache.logging.log4j.util.Strings;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
@@ -130,9 +140,30 @@ public class Bot extends Configurable implements Startable, Stopable {
     @ConfigParam(name = "endInterval")
     public Instant endInterval;
 
+    @ConfigParamConverter(converters = StringToTemporalUnitConverter.class)
+    @ConfigParam(name = "intervalEntriesUnit")
+    public TemporalUnit intervalEntriesUnit;
+
     @ConfigParam(name = "initialAmmount")
     public Double initialAmmount;
 
+    //FIXME: THIS SHOULD NOT BE NECESSARY
+    private SeriesService seriesService;
+    public void setSeriesService(SeriesService service)
+    {
+        this.seriesService = service;
+    }
+
+    //FIXME: THIS SHOULD NOT BE NECESSARY
+    private BotService botService;
+    public void setBotService(BotService botService)
+    {
+        this.botService = botService;
+    }
+
+    private Wallet currentWallet;
+
+    private boolean isTesting = false;
 
     public void addSeriesUpdateTradeListener(SeriesUpdateListenerCallback listener)
     {
@@ -161,12 +192,16 @@ public class Bot extends Configurable implements Startable, Stopable {
 
     }
 
-    public BackTestResult run() throws ImpossibleToStartException {
+    public BackTestResult test() throws ImpossibleToStartException {
+
+        this.isTesting = true;
 
         Wallet testWallet = new Wallet();
         testWallet.putAmmountToStock( this.type, new BigDecimal(this.initialAmmount) );
         Wallet comparingWallet = new Wallet();
         comparingWallet.putAmmountToStock( this.type, new BigDecimal(this.initialAmmount) );
+
+        this.currentWallet = testWallet;
 
         AtomicInteger openedTradesCount = new AtomicInteger(0);
         AtomicInteger closedTradesCount = new AtomicInteger(0);
@@ -250,6 +285,17 @@ public class Bot extends Configurable implements Startable, Stopable {
         backTestResult.setInitialAmmount(initialAmmountBD);
         backTestResult.setInitialValue(initialValue);
 
+
+        int currentOpenenedTradesCount = openedTradesCount.get();
+        backTestResult.setOpnenedTradesCount(currentOpenenedTradesCount);
+        int currentClosedTradesCount1 = closedTradesCount.get();
+        backTestResult.setClosedTradesCount(currentClosedTradesCount1);
+
+        this.exitAllOpened();
+
+        backTestResult.setForcedClosedTradesCount(currentOpenenedTradesCount - currentClosedTradesCount1);
+
+
         BigDecimal finalAccumulatedValue = testWallet.getAmmountsOfStock(this.type);
         BigDecimal finalExchange = getExchangeValueFromCurrentSerialEntry(lastEntry);
         BigDecimal finalValue = finalExchange.multiply(finalAccumulatedValue);
@@ -261,8 +307,7 @@ public class Bot extends Configurable implements Startable, Stopable {
         BigDecimal finalComparingValue = initialComparingAmmount.multiply(lastEntry.get().getClosing());
         backTestResult.setComparingFinalValue(finalComparingValue);
 
-        backTestResult.setOpnenedTradesCount(openedTradesCount.get());
-        backTestResult.setClosedTradesCount(closedTradesCount.get());
+
 
         return backTestResult;
 
@@ -274,15 +319,6 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         this.openendTrades = new ArrayList<TradePosition>();
 
-        List<SerialEntry> entries = this.marketFacade.fetch(
-                this.type,
-                this.startInterval,
-                this.endInterval)
-            .stream()
-            .sorted()
-            .collect(Collectors.toList());
-
-        AtomicInteger currentEntryIndex = new AtomicInteger(0);
         AtomicReference<SerialEntry> currentEntry = new AtomicReference<>();
 
         this.addOpenTradeListener( trade -> {
@@ -341,11 +377,12 @@ public class Bot extends Configurable implements Startable, Stopable {
                         .reduce(BigDecimal::add)
                         .get();
 
+                BigDecimal baseResultantAmmount = resultantExitAmmount.multiply(currentClosing);
+
                 tradePosition.setExitAmmount( resultantExitAmmount );
-                tradePosition.setExitValue( resultantExitAmmount.multiply(exchangeValueRate) );
+                tradePosition.setExitValue( baseResultantAmmount );
                 tradePosition.setMarketId(UUID.randomUUID().toString());
 
-                BigDecimal baseResultantAmmount = resultantExitAmmount.multiply(currentClosing);
 
                 BigDecimal currentTotalAmmount = testWallet.getAmmountsOfStock(this.type).add(baseResultantAmmount);
                 testWallet.putAmmountToStock(this.type, currentTotalAmmount);
@@ -372,19 +409,83 @@ public class Bot extends Configurable implements Startable, Stopable {
             return null;
         });
 
+        Duration durationInterval = Duration.between(this.startInterval, this.endInterval);
+
+        long totalEntriesToFetch = this.getCountEntriesToFetch(durationInterval);
+
+        int PAGE_SIZE = 500;
+        int currentPageIndex = 0;
+
+        Pageable initialPageRequest = PageRequest.of( currentPageIndex, PAGE_SIZE );
+        PageImpl<SerialEntry> pageEntries = getSerialEntriesPage( totalEntriesToFetch, PAGE_SIZE, initialPageRequest );
+
+        AtomicReference<Page<SerialEntry>> pageEntriesReference = new AtomicReference<Page<SerialEntry>>();
+        pageEntriesReference.set(pageEntries);
+
+        Iterator<SerialEntry> entriesIterator = pageEntries.get().iterator();
+
+        AtomicReference< Iterator <SerialEntry> > entriesIteratorReference = new AtomicReference< Iterator< SerialEntry > >();
+        entriesIteratorReference.set(entriesIterator);
+
+        AtomicInteger currentEntryIndex = new AtomicInteger(0);
+
         this.algorithm.setFetchNextSeriesEntryMethod( stockType -> {
-            int currentIndex = currentEntryIndex.getAndIncrement();
 
-            final List<SerialEntry> fetchedEntries = new ArrayList<SerialEntry>();
+            //int currentIndex = currentEntryIndex.getAndIncrement();
 
+
+            /*
             if(currentIndex < entries.size())
             {
                 currentEntry.set(entries.get(currentIndex));
                 fetchedEntries.addAll(new ArrayList<>() {{ add( currentEntry.get() ); }});
             }
+            */
 
-            if (Objects.nonNull(this.seriesUpdateListeners)) {
-                this.seriesUpdateListeners.forEach(listener -> listener.callback(fetchedEntries));
+            SerialEntry currentFetchedEntry = null;
+            Iterator currentEntriesIterator = entriesIteratorReference.get();
+
+            if(currentEntriesIterator.hasNext())
+            {
+                currentFetchedEntry = (SerialEntry) currentEntriesIterator.next();
+            }
+            else
+            {
+                Page<SerialEntry> currentPageEntries = pageEntriesReference.get();
+                if ( currentPageEntries.hasNext() )
+                {
+
+                    Pageable pageable = currentPageEntries.nextPageable();
+                    PageImpl<SerialEntry> nextCurrentPage = this.getSerialEntriesPage(totalEntriesToFetch, PAGE_SIZE, pageable);
+                    pageEntriesReference.set(nextCurrentPage);
+
+                    Iterator<SerialEntry> forwardEntriesIterator = nextCurrentPage.iterator();
+                    entriesIteratorReference.set(forwardEntriesIterator);
+                    currentFetchedEntry = forwardEntriesIterator.next();
+
+                }
+
+            }
+
+            final List<SerialEntry> fetchedEntries = new ArrayList<SerialEntry>();
+
+            fetchedEntries.add(currentFetchedEntry);
+            currentEntry.set(currentFetchedEntry);
+
+            Boolean entryWasFetched = Objects.nonNull( currentFetchedEntry );
+
+            if ( Objects.nonNull( this.seriesUpdateListeners ) )
+            {
+                this.seriesUpdateListeners.forEach(listener -> listener.callback(
+                                                                                    entryWasFetched ?
+                                                                                    fetchedEntries:
+                                                                                    null)
+                                                                                );
+            }
+
+            if( Objects.isNull( currentFetchedEntry ) )
+            {
+                return null;
             }
 
             return fetchedEntries;
@@ -392,6 +493,45 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         this.algorithm.setFetchSeriesEntriesOnIntervalMethod( (type, from, end) -> new ArrayList<SerialEntry>(){{}} );
 
+    }
+
+    private Long getCountEntriesToFetch(Duration durationInterval) {
+
+        switch( (ChronoUnit) this.intervalEntriesUnit)
+        {
+            case MINUTES:
+                return durationInterval.toMinutes();
+
+            //FIXME: ADD ANOTHER TIMES UNITS
+        }
+
+        return null;
+    }
+
+    @NotNull
+    private PageImpl<SerialEntry> getSerialEntriesPage(long totalEntriesToFetch, int PAGE_SIZE, Pageable currentPageRequest)
+    {
+
+        int startIntervalOffset = currentPageRequest.getPageNumber() * PAGE_SIZE;
+
+        Instant currentPageStartInterval = this.startInterval.plus(startIntervalOffset, this.intervalEntriesUnit);
+
+        Instant currentPageEndInterval = currentPageStartInterval.plus(PAGE_SIZE, this.intervalEntriesUnit);
+
+        currentPageEndInterval = currentPageEndInterval.isAfter(this.endInterval) ?
+                                    this.endInterval :
+                                    currentPageEndInterval;
+
+        List<SerialEntry> entries = this.marketFacade.fetch(this.type,
+                                                            currentPageStartInterval,
+                                                            currentPageEndInterval)
+                                                        .stream()
+                                                        .sorted()
+                                                        .collect(Collectors.toList());
+
+        PageImpl<SerialEntry> pageEntries = new PageImpl<>(entries, currentPageRequest, totalEntriesToFetch);
+
+        return pageEntries;
     }
 
     @NotNull
@@ -556,11 +696,42 @@ public class Bot extends Configurable implements Startable, Stopable {
         return profitableTrades;
     }
 
+    public List<TradePosition> exitAllOpened()
+    {
+        return this.openendTrades.stream().map(this::exitTrade).collect(Collectors.toList());
+    }
+
+    //FIXME: ON BACKTEST, SHOULD NOT INVOKE EXITPOSITION FROM MARKET
     public TradePosition exitTrade(TradePosition openTrade) {
 
         BigDecimal exitAmmount = this.exitAmmountGetter.get(openTrade);
 
-        TradePosition trade = this.marketFacade.exitPosition(openTrade, exitAmmount, this.type );
+        TradePosition trade;
+
+        if(!this.isTesting)
+        {
+             trade = this.marketFacade.exitPosition(openTrade, exitAmmount, this.type );
+        }
+        else
+        {
+
+            BotModel botModel = this.botService.get(this.id);
+            SerialEntryModel lastEntryFromSeries = this.seriesService.getLastEntryFromSeries(botModel);
+
+            BigDecimal ammount = openTrade.getEntryAmmount();
+            BigDecimal value = ammount.multiply(lastEntryFromSeries.getClosing());
+
+            trade = TradePosition
+                    .builder()
+                    .exitAmmount(ammount)
+                    .exitValue(value)
+                    .marketId(UUID.randomUUID().toString())
+                    .build();
+
+            BigDecimal newAmmountInWallet = this.currentWallet.getAmmountsOfStock(this.type).add(value);
+            this.currentWallet.putAmmountToStock(this.type, newAmmountInWallet);
+
+        }
 
         if(Objects.nonNull(this.closeTradeListerners))
         {

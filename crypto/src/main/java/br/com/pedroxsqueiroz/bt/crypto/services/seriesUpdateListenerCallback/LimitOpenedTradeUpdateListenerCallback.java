@@ -47,24 +47,29 @@ public class LimitOpenedTradeUpdateListenerCallback extends SeriesUpdateListener
 
             SerialEntry lastTrade = entries.get(0);
 
-            trades.stream().filter( currentTrade -> {
-                Instant tradeTime = currentTrade.getSerialEntry().getTime();
-                return tradeTime.isBefore(limit);
-            }).forEach( lossTrade -> {
+            if(Objects.nonNull(lastTrade))
+            {
 
-                TradePosition position = TradePosition
-                        .builder()
-                        .entryAmmount( lossTrade.getAmmount() )
-                        .entryTime( lossTrade.getSerialEntry().getTime() )
-                        .exitSerialEntry(lastTrade)
-                        .build();
+                trades.stream().filter( currentTrade -> {
+                    Instant tradeTime = currentTrade.getSerialEntry().getTime();
+                    return tradeTime.isBefore(limit);
+                }).forEach( lossTrade -> {
 
-                bot.exitTrade(position);
+                    TradePosition position = TradePosition
+                            .builder()
+                            .entryAmmount( lossTrade.getAmmount() )
+                            .entryTime( lossTrade.getSerialEntry().getTime() )
+                            .exitSerialEntry(lastTrade)
+                            .marketId(lossTrade.getMarketId())
+                            .build();
 
-            });
+                    bot.exitTrade(position);
+
+                });
+
+            }
 
         }
-
 
     }
 }

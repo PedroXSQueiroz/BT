@@ -135,7 +135,7 @@ public class BinanceMarketFacade extends MarketFacade {
         HttpUriRequest request = this.requestFactory
                 .withRequestParams("symbol", type.getName())
                 .withRequestParams("interval", String.format("%s%s", this.interval, this.intervalUnit) )
-                //.withRequestParams("endTime", Long.toString(to.toEpochMilli()))
+                .withRequestParams("endTime", Long.toString(to.toEpochMilli()))
                 .withRequestParams("startTime", Long.toString(from.toEpochMilli()))
                 .setup("GET", "klines")
                 .build();

@@ -70,14 +70,25 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
     }
 
     protected void addEntriesToSeries(List<SerialEntry> series) {
-        series.forEach(serialEntry -> this.barSeries.addBar(
-                serialEntry.getDate().toInstant().atZone(ZoneId.systemDefault()),
-                serialEntry.getOpening(),
-                serialEntry.getMax(),
-                serialEntry.getMin(),
-                serialEntry.getClosing(),
-                serialEntry.getVolume()
-        ));
+
+        if(Objects.nonNull(series))
+        {
+
+            series
+                .stream()
+                .filter(Objects::nonNull)
+                .forEach(serialEntry ->
+                    this.barSeries.addBar(
+                    serialEntry.getDate().toInstant().atZone(ZoneId.systemDefault()),
+                    serialEntry.getOpening(),
+                    serialEntry.getMax(),
+                    serialEntry.getMin(),
+                    serialEntry.getClosing(),
+                    serialEntry.getVolume()
+                ));
+
+        }
+
     }
 
     @Override
