@@ -48,6 +48,11 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
     @Override
     protected void prepare() {
 
+        if(!this.barSeries.isEmpty())
+        {
+            this.barSeries = new BaseBarSeriesBuilder().build();
+        }
+
         closePriceIndicator = new ClosePriceIndicator(barSeries);
         rsiIndicator = new RSIIndicator(closePriceIndicator, 14);
         emaIndicator = new EMAIndicator(rsiIndicator, 3);

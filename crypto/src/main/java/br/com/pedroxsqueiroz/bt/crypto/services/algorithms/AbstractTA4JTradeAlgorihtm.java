@@ -25,7 +25,7 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
         this.barSeries  = new BaseBarSeriesBuilder().build();
     }
 
-    private static Logger LOGGER = Logger.getLogger( TrendFollowingTradeAlgorithm.class.getName() );
+    private static Logger LOGGER = Logger.getLogger( AbstractTA4JTradeAlgorihtm.class.getName() );
 
     //@ConfigParamConverter(converters = StringToStockTypeConverter.class)
     @ConfigParam(name ="stockType", getFromParent = true)
