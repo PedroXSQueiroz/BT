@@ -417,7 +417,7 @@ public class Bot extends Configurable implements Startable, Stopable {
         int currentPageIndex = 0;
 
         Pageable initialPageRequest = PageRequest.of( currentPageIndex, PAGE_SIZE );
-        PageImpl<SerialEntry> pageEntries = getSerialEntriesPage( totalEntriesToFetch, PAGE_SIZE, initialPageRequest );
+        PageImpl<SerialEntry> pageEntries = getSerialEntriesPage( totalEntriesToFetch, PAGE_SIZE, initialPageRequest,currentEntry.get() );
 
         AtomicReference<Page<SerialEntry>> pageEntriesReference = new AtomicReference<Page<SerialEntry>>();
         pageEntriesReference.set(pageEntries);
@@ -456,7 +456,7 @@ public class Bot extends Configurable implements Startable, Stopable {
                 {
 
                     Pageable pageable = currentPageEntries.nextPageable();
-                    PageImpl<SerialEntry> nextCurrentPage = this.getSerialEntriesPage(totalEntriesToFetch, PAGE_SIZE, pageable);
+                    PageImpl<SerialEntry> nextCurrentPage = this.getSerialEntriesPage(totalEntriesToFetch, PAGE_SIZE, pageable, currentEntry.get());
                     pageEntriesReference.set(nextCurrentPage);
 
                     Iterator<SerialEntry> forwardEntriesIterator = nextCurrentPage.iterator();
@@ -512,7 +512,7 @@ public class Bot extends Configurable implements Startable, Stopable {
     }
 
     @NotNull
-    private PageImpl<SerialEntry> getSerialEntriesPage(long totalEntriesToFetch, int PAGE_SIZE, Pageable currentPageRequest)
+    private PageImpl<SerialEntry> getSerialEntriesPage(long totalEntriesToFetch, int PAGE_SIZE, Pageable currentPageRequest, SerialEntry lastEntry)
     {
 
         int startIntervalOffset = currentPageRequest.getPageNumber() * PAGE_SIZE;
@@ -527,14 +527,35 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         List<SerialEntry> entries = this.marketFacade.fetch(this.type,
                                                             currentPageStartInterval,
-                                                            currentPageEndInterval)
-                                                        .stream()
-                                                        .sorted()
-                                                        .collect(Collectors.toList());
+                                                            currentPageEndInterval
+                                                            ).stream()
+                                                            .sorted()
+                                                            .collect(Collectors.toList());
 
-        PageImpl<SerialEntry> pageEntries = new PageImpl<>(entries, currentPageRequest, totalEntriesToFetch);
+        //FIXME: THIS SHOULD NOT BE NECESSARY
+        if(Objects.nonNull(lastEntry))
+        {
 
-        return pageEntries;
+            //FIXME: THIS SHOULD NOT BE NECESSARY
+            Optional<SerialEntry> intersectionLimit = entries
+                    .stream()
+                    .filter(entry -> entry.getDate().after(lastEntry.getDate()))
+                    .findFirst();
+
+            int intersectionLimitIndex = entries.indexOf(intersectionLimit.get());
+
+            if(intersectionLimitIndex < 0)
+            {
+                return new PageImpl<>(entries, currentPageRequest, totalEntriesToFetch);
+            }
+
+            List<SerialEntry> adjustedEntries = entries.stream().skip(intersectionLimitIndex).collect(Collectors.toList());
+            //FIXME: END THIS SHOULD NOT BE NECESSARY
+
+            return new PageImpl<>(adjustedEntries, currentPageRequest, totalEntriesToFetch);
+        }
+
+        return new PageImpl<>(entries, currentPageRequest, totalEntriesToFetch);
     }
 
     @NotNull
