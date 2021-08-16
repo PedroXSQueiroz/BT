@@ -502,6 +502,9 @@ public class Bot extends Configurable implements Startable, Stopable {
             case MINUTES:
                 return durationInterval.toMinutes();
 
+            case HOURS:
+                return durationInterval.toHours();
+
             //FIXME: ADD ANOTHER TIMES UNITS
         }
 

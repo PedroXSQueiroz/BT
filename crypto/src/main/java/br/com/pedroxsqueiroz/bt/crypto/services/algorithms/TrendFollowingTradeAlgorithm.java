@@ -35,8 +35,12 @@ public class TrendFollowingTradeAlgorithm extends AbstractTA4JTradeAlgorihtm {
 
     private Boolean positionIsOpen = false;
     */
-    private final int OVERBOUGHT_THRESHOLD  = 60;
-    private final int OVERSOLD_THRESHOLD    = 40;
+
+    @ConfigParam(name = "overboughtThreshold")
+    public Integer OVERBOUGHT_THRESHOLD  = 60;
+
+    @ConfigParam(name = "oversoldThreshold")
+    public Integer OVERSOLD_THRESHOLD    = 40;
 
     ClosePriceIndicator closePriceIndicator;
     RSIIndicator rsiIndicator;
