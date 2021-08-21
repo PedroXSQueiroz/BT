@@ -33,6 +33,25 @@ services:
     #             aliases:
     #             - "db"
 
+    sonar:
+        container_name: sonar
+        image: sonarqube:8.2-community
+        volumes:
+            - ./sonar/data:/opt/sonarqube/data
+            - ./sonar/logs:/opt/sonarqube/logs
+            - ./sonar/extensions:/opt/sonarqube/extensions
+        ports:
+            - 9000:9000
+            - 9001:9001
+        environment:
+            SONAR_JDBC_USERNAME: sonar
+            SONAR_JDBC_PASSWORD: sonar
+        networks:
+            BT-network:
+                aliases:
+                - "sonar"
+        
+
 
     crypto:
         container_name: crypto
