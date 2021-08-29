@@ -330,15 +330,15 @@ public class ConfigurableParamsUtils {
     public <T> Class<? extends T>  resolveConcreteClassOfParam(String alias, Class<T> superClass)
     {
 
-        return new ClassGraph()
+        Optional<?> resultantClass = new ClassGraph()
                     .enableClassInfo()
                     .enableAnnotationInfo()
                     .scan()
                     .getClassesWithAnnotation(InjectInConfigParam.class.getName())
                     .stream()
-                    .filter(clazz ->
-                            {
-                                String comparingAlias = (String) clazz
+                    .filter( clazz -> {
+	                                
+                				String comparingAlias = (String) clazz
                                         .getAnnotationInfo(InjectInConfigParam.class.getName())
                                         .getParameterValues()
                                         .get("alias")
@@ -350,8 +350,8 @@ public class ConfigurableParamsUtils {
                                                 || clazz.implementsInterface(superClass.getName()
                                         )
                                 );
-                            }
-                    ).map(clazzInfo -> {
+                	
+                    }).map(clazzInfo -> {
 
                         Class<? extends T> foundedClass = null;
 
@@ -362,12 +362,17 @@ public class ConfigurableParamsUtils {
                         }
 
                         return foundedClass;
-
                     })
                     .filter(Objects::nonNull)
-                    .findAny()
-                    .get();
-
+                    .findAny();
+		
+        if( resultantClass.isPresent() ) 
+        {
+        	return (Class<? extends T>) resultantClass.get();
+        	
+        }
+        
+        return null;
 
     }
 }

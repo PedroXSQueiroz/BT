@@ -49,13 +49,17 @@ public class ParamsToMarketFacadeConverterTest extends AbstractParamConverterTes
             add(mockMarketFacade);
         }});
 
-        Mockito.doReturn(dummyExtractionParamsResult)
-                .when(this.mockParamsUtils)
-                .extractConfigParamRawValuesMap(Mockito.anyMap(), Mockito.any());
-
         Mockito.doCallRealMethod()
                 .when(this.mockMarketFacade)
                 .config(Mockito.any());
+        
+        Mockito.doReturn( new String[] {"dummy"} )
+        		.when(this.mockContext)
+        		.getBeanNamesForType( mockMarketFacade.getClass() );
+        
+        Mockito.doReturn(dummyExtractionParamsResult)
+	        .when(this.mockParamsUtils)
+	        .extractConfigParamRawValuesMap(Mockito.anyMap(), Mockito.any());
 
     }
 

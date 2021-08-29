@@ -30,7 +30,7 @@ public abstract class ParamsToConfigurableInstanceConverter<R extends Configurab
 
     @Autowired
     private ApplicationContext context;
-
+    
     private Set<R> injectedBeans;
 
     //private ApplicationContext context;

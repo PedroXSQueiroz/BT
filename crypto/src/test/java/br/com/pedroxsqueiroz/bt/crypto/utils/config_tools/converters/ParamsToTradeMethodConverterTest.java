@@ -60,6 +60,10 @@ public class ParamsToTradeMethodConverterTest
         Mockito.doCallRealMethod()
                 .when(this.mockAlgorithm)
                 .config(Mockito.any());
+        
+        Mockito.doReturn( new String[] {"dummy"} )
+	        	.when(this.mockContext)
+	        	.getBeanNamesForType(this.mockAlgorithm.getClass());
 
     }
 
