@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.experimental.Delegate;
 import okhttp3.*;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,10 +32,10 @@ import java.math.RoundingMode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +45,9 @@ import java.util.stream.Collectors;
 @Component("binance")
 public class BinanceMarketFacade extends MarketFacade {
 
-    /*-----------------------------------------------------------------------------------
+	private static final Logger LOGGER = Logger.getLogger( BinanceMarketFacade.class.getName() );	
+	
+	/*-----------------------------------------------------------------------------------
     STOCKYTYPE METADATA
     -------------------------------------------------------------------------------------*/
 
@@ -69,7 +71,6 @@ public class BinanceMarketFacade extends MarketFacade {
     private static final int SERIES_ENTRY_CLOSING = 4;
     private static final int SERIES_ENTRY_VOLUME = 5;
 
-    private static Logger LOGGER = Logger.getLogger( BinanceMarketFacade.class.getName() );
 
     @Autowired
     @Qualifier("binanceRequestFactory")
@@ -260,7 +261,7 @@ public class BinanceMarketFacade extends MarketFacade {
     }
     */
 
-    private JsonNode sendOrder(BigDecimal ammount, StockType type, String orderSide) throws IOException, URISyntaxException, CloneNotSupportedException {
+    private JsonNode sendOrder(BigDecimal ammount, StockType type, String orderSide) throws IOException, CloneNotSupportedException {
 
         ObjectMapper serializer = new ObjectMapper();
         String currentStockTypeName = type.getName();
@@ -308,7 +309,7 @@ public class BinanceMarketFacade extends MarketFacade {
         });
     }
 
-    private String getPrescisionForStock(String currentStockTypeName) throws IOException, URISyntaxException, CloneNotSupportedException {
+    private String getPrescisionForStock(String currentStockTypeName) throws IOException, CloneNotSupportedException {
 
         ObjectMapper serializer = new ObjectMapper();
 
@@ -402,15 +403,9 @@ public class BinanceMarketFacade extends MarketFacade {
 
                     });
 
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        } catch (ClientProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        } catch (CloneNotSupportedException | IOException e) {
+            LOGGER.log(Level.SEVERE, e.getMessage());
+        } 
 
         return null;
 
@@ -418,65 +413,59 @@ public class BinanceMarketFacade extends MarketFacade {
 
     @Override
     public Wallet getWallet() {
+            
+        try(CloseableHttpClient httpClient = HttpClients.createDefault())
+        {
+        	
+        	Long serverTime = this.getCurrentServerTime();
+        	
+        	if(Objects.isNull(serverTime))
+        	{
+        		return null;
+        	}
+        	
+        	HttpUriRequest request = this.requestFactory
+        			.withRequestParams("timestamp", Long.toString( serverTime ) )
+        			.withRequestParams("recvWindow", Long.toString(30000) )
+        			.setup("GET", "account")
+        			.assign()
+        			.build();
 
-        try {
-
-            Long serverTime = this.getCurrentServerTime();
-
-            if(Objects.isNull(serverTime))
-            {
-                return null;
-            }
-
-            HttpUriRequest request = this.requestFactory
-                    .withRequestParams("timestamp", Long.toString( serverTime ) )
-                    .withRequestParams("recvWindow", Long.toString(30000) )
-                    .setup("GET", "account")
-                    .assign()
-                    .build();
-
-            return HttpClients.createDefault().execute(request, (response) -> {
-
-                InputStream responseContent = response.getEntity().getContent();
-                ObjectMapper serializer = new ObjectMapper();
-                JsonNode responseJson = serializer.readTree(responseContent);
-
-                if(response.getStatusLine().getStatusCode() == 200)
-                {
-
-
-                    Wallet wallet = new Wallet();
-
-                    JsonNode balance = responseJson.get("balances");
-                    balance.forEach( stock -> {
-
-                        String stockName = stock.get("asset").asText();
-                        double ammount = stock.get("free").asDouble();
-
-                        StockType stockType = new StockType(stockName);
-
-                        wallet.putAmmountToStock( stockType, new BigDecimal( ammount ) );
-
-                    });
-
-                    return wallet;
-                }
-
-                LOGGER.severe( String.format( "Error on request wallet to binance\n%s", responseJson.toPrettyString() ) );
-
-                return null;
-
-            });
-
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        } catch (ClientProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        	return httpClient.execute(request, response -> {
+        		
+        		InputStream responseContent = response.getEntity().getContent();
+        		ObjectMapper serializer = new ObjectMapper();
+        		JsonNode responseJson = serializer.readTree(responseContent);
+        		
+        		if(response.getStatusLine().getStatusCode() == 200)
+        		{
+        			
+        			
+        			Wallet wallet = new Wallet();
+        			
+        			JsonNode balance = responseJson.get("balances");
+        			balance.forEach( stock -> {
+        				
+        				String stockName = stock.get("asset").asText();
+        				double ammount = stock.get("free").asDouble();
+        				
+        				StockType stockType = new StockType(stockName);
+        				
+        				wallet.putAmmountToStock( stockType, new BigDecimal( ammount ) );
+        				
+        			});
+        			
+        			return wallet;
+        		}
+        		
+        		LOGGER.severe( String.format( "Error on request wallet to binance\n%s", responseJson.toPrettyString() ) );
+        		
+        		return null;
+        	
+        	});
+        } catch (CloneNotSupportedException | IOException e) {
+            LOGGER.log(Level.SEVERE, e.getMessage());
+        } 
 
         return null;
     }
@@ -494,28 +483,36 @@ public class BinanceMarketFacade extends MarketFacade {
                             }}: null;
     }
 
-    private Long getCurrentServerTime() throws IOException, URISyntaxException, CloneNotSupportedException {
-        return HttpClients.createDefault().execute(
-                this.requestFactory
-                        .setup("GET", "time")
-                        .build(),
-                (response) -> {
-
-                    InputStream responseContent = response.getEntity().getContent();
-                    ObjectMapper serializer = new ObjectMapper();
-                    JsonNode responseJson = serializer.readTree(responseContent);
-
-                    if (response.getStatusLine().getStatusCode() == 200) {
-
-                        return responseJson.get("serverTime").asLong();
-
-                    }
-
-                    LOGGER.severe(String.format("Error on get syncronization Binance server time\n%s", responseJson));
-
-                    return null;
-                }
-        );
+    private Long getCurrentServerTime() throws IOException, CloneNotSupportedException {
+        
+    	try(CloseableHttpClient httpClient = HttpClients.createDefault())
+    	{
+    		
+    		return httpClient.execute(
+    				this.requestFactory
+    				.setup("GET", "time")
+    				.build(),
+    				(response) -> {
+    					
+    					InputStream responseContent = response.getEntity().getContent();
+    					ObjectMapper serializer = new ObjectMapper();
+    					JsonNode responseJson = serializer.readTree(responseContent);
+    					
+    					if (response.getStatusLine().getStatusCode() == 200) {
+    						
+    						return responseJson.get("serverTime").asLong();
+    						
+    					}
+    					
+    					LOGGER.severe(String.format("Error on get syncronization Binance server time\n%s", responseJson));
+    					
+    					return null;
+    				}
+    				);
+    		
+    	}
+    	
+		
     }
 
     @Delegate(types = Configurable.class)
@@ -599,15 +596,6 @@ public class BinanceMarketFacade extends MarketFacade {
     public void start() throws ImpossibleToStartException {
 
 
-
-            /*
-            WebSocketContainer webSocketContainer = ContainerProvider
-                    .getWebSocketContainer();
-
-            webSocketContainer
-                    .connectToServer( BinanceSocketClient.class, URI.create(klineUrl) );
-            */
-
             this.serialEntries = new ArrayBlockingQueue<SerialEntry>(MAX_BUFFER_CAPACITY);
 
             String websocketRoot = this.config.getWebsocketRoot();
@@ -636,86 +624,6 @@ public class BinanceMarketFacade extends MarketFacade {
 
             String precisionMask = this.getPrescisionForStock(this.currentStockType.getName());
             this.stockyTypePrecision = precisionMask.split( "[.]" )[1].indexOf('1') + 1;
-
-
-        /*
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-
-        this.scheduled = scheduledExecutorService.scheduleAtFixedRate(() -> {
-
-            try {
-
-                HttpClients.createDefault().execute(
-                        this.requestFactory
-                                .withRequestParams("interval", String.format("%s%s", this.interval.toString(), this.intervalUnit ) )
-                                .withRequestParams("symbol",this.currentStockType.getName())
-                                .withRequestParams("limit","1")
-                                .setup("GET", "klines")
-                                .build(),
-                        (response) -> {
-
-                            InputStream responseContent = response.getEntity().getContent();
-
-                            if(response.getStatusLine().getStatusCode() != 200)
-                            {
-                                LOGGER.severe(String.format( "error on request candle to Binance\n%s", IOUtils.toString(responseContent, Charset.forName("UTF-8")) ) );
-                                return null;
-                            }
-
-                            ObjectMapper serializer = new ObjectMapper();
-                            JsonNode jsonNode = serializer.readTree(responseContent);
-
-                            Map<Instant, SerialEntry> seriesSlice = new HashMap<Instant, SerialEntry>();
-
-                            for( JsonNode currentEntryData : jsonNode )
-                            {
-                                LOGGER.info(currentEntryData.toPrettyString());
-
-                                try {
-                                    SerialEntry currentEntry = new SerialEntry();
-
-                                    long dateTimestamp  = currentEntryData.get(SERIES_ENTRY_TIME).asLong();
-                                    Instant dateInstant = Instant.ofEpochMilli(dateTimestamp);
-                                    java.util.Date date = Date.from(dateInstant);
-                                    double opening      = currentEntryData.get(SERIES_ENTRY_OPENING).asDouble();
-                                    double max          = currentEntryData.get(SERIES_ENTRY_MAX).asDouble();
-                                    double min          = currentEntryData.get(SERIES_ENTRY_MIN).asDouble();
-                                    double closing      = currentEntryData.get(SERIES_ENTRY_CLOSING).asDouble();
-                                    double volume       = currentEntryData.get(SERIES_ENTRY_VOLUME).asDouble();
-
-                                    currentEntry.setDate(date);
-                                    currentEntry.setOpening(opening);
-                                    currentEntry.setMax(max);
-                                    currentEntry.setMin(min);
-                                    currentEntry.setClosing(closing);
-                                    currentEntry.setVolume(volume);
-
-                                    LOGGER.info( serializer.writeValueAsString(currentEntry) );
-
-                                    this.serialEntries.put( currentEntry );
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            return null;
-                        }
-                );
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
-
-
-
-        }, 1, 1, TimeUnit.MINUTES);
-
-
-        this.serialEntries = new ArrayBlockingQueue<SerialEntry>(MAX_BUFFER_CAPACITY);
-         */
+        
     }
 }

@@ -491,7 +491,7 @@ public class Bot extends Configurable implements Startable, Stopable {
             return fetchedEntries;
         });
 
-        this.algorithm.setFetchSeriesEntriesOnIntervalMethod( (type, from, end) -> new ArrayList<SerialEntry>(){{}} );
+        this.algorithm.setFetchSeriesEntriesOnIntervalMethod( (type, from, end) -> new ArrayList<SerialEntry>() );
 
     }
 
@@ -560,8 +560,7 @@ public class Bot extends Configurable implements Startable, Stopable {
 
     @NotNull
     private BigDecimal getExchangeValueFromCurrentSerialEntry(AtomicReference<SerialEntry> currentEntry) {
-        BigDecimal divisor = new BigDecimal(1.0D);
-        divisor.setScale(10);
+        BigDecimal divisor = BigDecimal.valueOf(1.0D).setScale(10);
         BigDecimal exchangeRate = divisor.divide(currentEntry.get().getClosing(), 10, RoundingMode.HALF_UP);
         return exchangeRate;
     }

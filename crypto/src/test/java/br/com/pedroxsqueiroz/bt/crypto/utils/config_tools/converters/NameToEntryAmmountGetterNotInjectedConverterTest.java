@@ -1,6 +1,6 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.converters;
 
-import br.com.pedroxsqueiroz.bt.crypto.services.DummyEntryAmmountGetter;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyEntryAmmountGetter;
 import br.com.pedroxsqueiroz.bt.crypto.services.EntryAmmountGetter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ParamConverter;

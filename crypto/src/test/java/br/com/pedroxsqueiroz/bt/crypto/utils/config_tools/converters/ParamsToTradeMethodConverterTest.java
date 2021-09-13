@@ -1,7 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.converters;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
-import br.com.pedroxsqueiroz.bt.crypto.services.DummyAlgorithm;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyAlgorithm;
 import br.com.pedroxsqueiroz.bt.crypto.services.TradeAlgorithm;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 

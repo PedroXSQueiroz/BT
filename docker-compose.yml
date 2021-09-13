@@ -62,11 +62,13 @@ services:
         # entrypoint: 'mvn clean compile spring-boot:run -Dspring-boot.run.arguments="--stock=BTCUSDC --outputSeries=/service/src/main/resources/BTCUSDC_series.csv --outputTrade=/service/src/main/resources/BTCUSDC_trades.csv --dataBase=/service/src/main/resources/Ethereum.csv" -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000"'
         # entrypoint: 'mvn compile'
         # entrypoint: 'mvn -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005" test'
-        entrypoint: 'mvn clean compile flyway:migrate spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000 -Duser.timezone=America/Sao_Paulo "'
+        entrypoint: 'mvn clean compile flyway:migrate spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8000 -Duser.timezone=America/Sao_Paulo" -e'
         # entrypoint: 'mvn clean compile install package'
+        environment:
+            - HOME=./
         volumes:
             - ./crypto:/service/
-            - $HOME/.m2:/root/.m2
+            - $HOME.m2:/root/.m2
         working_dir: '/service'
         ports:
             - "8000:8000"

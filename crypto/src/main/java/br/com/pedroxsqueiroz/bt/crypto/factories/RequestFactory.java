@@ -8,14 +8,13 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHeader;
 import org.springframework.stereotype.Component;
 
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.logging.Logger;
 
 @Component
 public class RequestFactory implements Cloneable {
 
-    private static Logger LOGGER = Logger.getLogger( RequestFactory.class.getName() );
+    private static final Logger LOGGER = Logger.getLogger( RequestFactory.class.getName() );
 
     public interface RequestAssigner
     {
@@ -24,13 +23,13 @@ public class RequestFactory implements Cloneable {
 
     public RequestFactory()
     {
-        this.headers =          new HashMap<String, String>();
-        this.defaultHeaders =   new HashMap<String, String>();
-        this.params =           new HashMap<String, String>();
-        this.defaultParams =    new HashMap<String, String>();
+        this.headers =          new HashMap<>();
+        this.defaultHeaders =   new HashMap<>();
+        this.params =           new HashMap<>();
+        this.defaultParams =    new HashMap<>();
     }
 
-    public RequestBuilder currentBuilder;
+    private RequestBuilder currentBuilder;
 
     private RequestAssigner assigner;
 
@@ -77,7 +76,7 @@ public class RequestFactory implements Cloneable {
         return (RequestFactory) this.clone();
     }
 
-    public RequestFactory setup( String method, String path ) throws URISyntaxException, CloneNotSupportedException {
+    public RequestFactory setup( String method, String path ) throws CloneNotSupportedException {
 
         RequestFactory selfClone = (RequestFactory) this.clone();
 
@@ -114,7 +113,8 @@ public class RequestFactory implements Cloneable {
     private RequestBuilder getRequestBuilder(String method, String path) {
         String uri = String.format("%s/%s",this.root, path);
 
-        LOGGER.info(String.format( "Building Request to %s %s", method, uri ));
+        String requestLogMessage = String.format( "Building Request to %s %s", method, uri );
+		LOGGER.info(requestLogMessage);
 
         RequestBuilder requestBuilder = RequestBuilder
                 .create(method)

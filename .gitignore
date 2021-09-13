@@ -1,5 +1,7 @@
 */node_modules/*
 */.mvn/*
+.m2/*
+sonar/*
 */target/*
 */.idea/*
 

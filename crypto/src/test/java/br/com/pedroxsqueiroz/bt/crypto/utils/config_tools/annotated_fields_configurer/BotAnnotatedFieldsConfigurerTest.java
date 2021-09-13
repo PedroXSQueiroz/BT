@@ -2,7 +2,9 @@ package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.annotated_fields_conf
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.StockType;
-import br.com.pedroxsqueiroz.bt.crypto.services.*;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.*;
+import br.com.pedroxsqueiroz.bt.crypto.services.Bot;
+import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.Configurable;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 

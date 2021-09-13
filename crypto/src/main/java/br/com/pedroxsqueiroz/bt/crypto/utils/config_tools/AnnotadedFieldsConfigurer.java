@@ -3,17 +3,20 @@ package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ConfigParamNotFoundException;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configurable{
 
-    final private T target;
+    private static final Logger LOGGER = Logger.getLogger(AnnotadedFieldsConfigurer.class.getName());
+	
+	private final T target;
 
     public AnnotadedFieldsConfigurer(T target)
     {
@@ -32,9 +35,9 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
                     {
 
                         try {
-                            resolveInverseDependecies( inner, (Configurable) field.get(inner)); ;
+                            resolveInverseDependecies( inner, (Configurable) field.get(inner));
                         } catch (IllegalAccessException e) {
-                            e.printStackTrace();
+                            LOGGER.log(Level.WARNING, e.getMessage());
                         }
 
                     }
@@ -55,7 +58,7 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
                             field.set( inner, parentFieldValue );
 
                         } catch (IllegalAccessException e) {
-                            e.printStackTrace();
+                        	LOGGER.log(Level.WARNING, e.getMessage());
                         }
 
                     }
@@ -100,11 +103,9 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
                             }
 
 
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        } catch (ConfigParamNotFoundException e) {
-                            e.printStackTrace();
-                        }
+                        } catch (IllegalAccessException | ConfigParamNotFoundException e) {
+                        	LOGGER.log(Level.WARNING, e.getMessage());
+                        } 
 
                     }
 
@@ -126,7 +127,7 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
                 .collect(
                     Collectors.toMap(
                         field -> field.getAnnotation(ConfigParam.class).name(),
-                        field -> field.getType()
+                        Field::getType
                     )
                 );
     }
@@ -142,7 +143,7 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
                     try {
                         return Objects.nonNull( field.get(this.target) );
                     } catch (IllegalAccessException e) {
-                        e.printStackTrace();
+                    	LOGGER.log(Level.WARNING, e.getMessage());
                     }
 
                     return false;

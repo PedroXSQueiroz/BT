@@ -1,6 +1,6 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.converters;
 
-import br.com.pedroxsqueiroz.bt.crypto.services.DummyExitAmmountGetter;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyExitAmmountGetter;
 import br.com.pedroxsqueiroz.bt.crypto.services.ExitAmmountGetter;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ParamConverter;

@@ -1,7 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.converters;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
-import br.com.pedroxsqueiroz.bt.crypto.services.DummyMarketFacade;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyMarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.services.MarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ParamConverter;

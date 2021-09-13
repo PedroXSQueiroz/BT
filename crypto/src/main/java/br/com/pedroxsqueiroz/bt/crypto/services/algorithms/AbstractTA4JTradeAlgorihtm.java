@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
@@ -147,50 +148,35 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
 
                         if(this.positionIsOpen)
                         {
-                            //boolean canClosePosition =  ( this.avoidNegativeProfit && lastBar.getClosePrice().isGreaterThan(lastBarOpeningTrade.getClosePrice() ) )
-                            //        || (!this.avoidNegativeProfit);
+                            Trade lastTrade = this.tradingRecord.getLastEntry();
 
-                            boolean canClosePosition = true;
-
-                            if(canClosePosition)
+                            if(Objects.nonNull(lastTrade))
                             {
+                                int entryTradeBarIndex = lastTrade.getIndex();
+                                TradePosition entryTradePosition = TradePosition
+                                        .builder()
+                                        .entryAmmount( BigDecimal.valueOf( lastTrade.getAmount().doubleValue() ) )
+                                        .entryValue( BigDecimal.valueOf( lastTrade.getValue().doubleValue() ) )
+                                        .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
+                                        .exitTime( lastBar.getEndTime().toInstant() )
+                                        .exitSerialEntry( serialEntries.get(0) )
+                                        .build();
 
-                                Trade lastTrade = this.tradingRecord.getLastEntry();
+                                TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
 
-                                if(Objects.nonNull(lastTrade))
+                                if(Objects.nonNull(exitedTradePosition))
                                 {
-                                    int entryTradeBarIndex = lastTrade.getIndex();
-                                    TradePosition entryTradePosition = TradePosition
-                                            .builder()
-                                            .entryAmmount( new BigDecimal( lastTrade.getAmount().doubleValue() ) )
-                                            .entryValue( new BigDecimal( lastTrade.getValue().doubleValue() ) )
-                                            .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
-                                            .exitTime( lastBar.getEndTime().toInstant() )
-                                            .exitSerialEntry( serialEntries.get(0) )
-                                            .build();
-
-                                    TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
-
-                                    if(Objects.nonNull(exitedTradePosition))
-                                    {
-                                        DecimalNum exitAmmount = DecimalNum.valueOf(exitedTradePosition.getExitAmmount());
-                                        Num currentClosePrice = lastBar.getClosePrice();
-                                        this.tradingRecord.exit(endIndex, currentClosePrice, exitAmmount);
-                                    }
-
-
+                                    DecimalNum exitAmmount = DecimalNum.valueOf(exitedTradePosition.getExitAmmount());
+                                    Num currentClosePrice = lastBar.getClosePrice();
+                                    this.tradingRecord.exit(endIndex, currentClosePrice, exitAmmount);
                                 }
 
-                                //this.positionIsOpen = false;
-
                             }
-                            else
-                            {
-                                LOGGER.info("Should close position, but the profit is negative, so will be ignored");
-                            }
-
+                            
                         }
+                    
                     }
+                
                 }
 
             }
@@ -199,7 +185,7 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
                 try {
                     this.stop();
                 } catch (ImpossibleToStopException e) {
-                    e.printStackTrace();
+                	LOGGER.log(Level.SEVERE, e.getMessage());
                 }
             }
         }
@@ -219,15 +205,13 @@ public abstract class AbstractTA4JTradeAlgorihtm extends TradeAlgorithm {
             int entryTradeBarIndex = lastTrade.getIndex();
             TradePosition entryTradePosition = TradePosition
                     .builder()
-                    .entryAmmount( new BigDecimal( lastTrade.getAmount().doubleValue() ) )
-                    .entryValue( new BigDecimal( lastTrade.getValue().doubleValue() ) )
+                    .entryAmmount( BigDecimal.valueOf( lastTrade.getAmount().doubleValue() ) )
+                    .entryValue( BigDecimal.valueOf( lastTrade.getValue().doubleValue() ) )
                     .entryTime( this.barSeries.getBar( entryTradeBarIndex ).getEndTime().toInstant() )
                     .exitTime( lastBar.getEndTime().toInstant() )
-                    .exitAmmount( new BigDecimal( lastTrade.getAmount().doubleValue() ) )
-                    .exitValue( new BigDecimal( lastTrade.getAmount().doubleValue() * lastBar.getClosePrice().doubleValue() ) )
+                    .exitAmmount( BigDecimal.valueOf( lastTrade.getAmount().doubleValue() ) )
+                    .exitValue( BigDecimal.valueOf( lastTrade.getAmount().doubleValue() * lastBar.getClosePrice().doubleValue() ) )
                     .build();
-
-            //TradePosition exitedTradePosition = this.exitPosition( entryTradePosition );
 
             this.positionIsOpen = false;
 

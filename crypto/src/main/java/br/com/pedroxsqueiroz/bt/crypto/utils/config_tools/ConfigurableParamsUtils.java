@@ -1,11 +1,12 @@
 package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 
 
-import br.com.pedroxsqueiroz.bt.crypto.controllers.BotController;
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ParamsToConfigurableInstanceConverter;
-import com.google.common.collect.Lists;
 import io.github.classgraph.ClassGraph;
+
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +19,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -25,7 +27,7 @@ import java.util.stream.Collectors;
 public class ConfigurableParamsUtils {
 
     private static Logger LOGGER = Logger.getLogger( ConfigurableParamsUtils.class.getName() );
-
+    
     @NotNull
     private Map<String, Field> getParamsToFields(Class<? extends Configurable> configurableClass) {
         Map<String, Field> paramsToFields = FieldUtils
@@ -63,11 +65,12 @@ public class ConfigurableParamsUtils {
                     if( Configurable.class.isAssignableFrom(paramType) &&
                             Map.class.isAssignableFrom(rawValue.getClass()))
                     {
-                        Map<String, Object> configurableDtoMap = (Map<String, Object>) rawValue;
-                        String configName = (String) configurableDtoMap.get("name");
-                        Map configInnerParams = (Map) configurableDtoMap.get("params");
-
-                        rawValue = new ConfigurableDto( configName, configInnerParams );
+                    	try 
+                    	{
+                    		rawValue = buildConfigurableDto(rawValue, (Class<Configurable>) paramType);
+                    	} catch (IllegalAccessException | InvocationTargetException | InstantiationException | IllegalArgumentException | SecurityException e) {
+							LOGGER.log(Level.SEVERE, e.getMessage());
+						}
                     }
 
                     if( List.class.isAssignableFrom(paramType) )
@@ -91,11 +94,14 @@ public class ConfigurableParamsUtils {
                                 if( listParamTypeIsConfigurable &&
                                         Map.class.isAssignableFrom(currentRawValue.getClass()))
                                 {
-                                    Map<String, Object> configurableDtoMap = (Map<String, Object>) currentRawValue;
-                                    String configName = (String) configurableDtoMap.get("name");
-                                    Map configInnerParams = (Map) configurableDtoMap.get("params");
 
-                                    currentRawValue = new ConfigurableDto( configName, configInnerParams );
+                                    try 
+                                    {
+										currentRawValue = buildConfigurableDto(currentRawValue, (Class<Configurable>) listParamType);
+									} catch (IllegalAccessException | InvocationTargetException
+											| InstantiationException e) {
+										LOGGER.log(Level.SEVERE, e.getMessage());
+									}
                                 }
 
                                 resolvedListValues.add(
@@ -130,6 +136,19 @@ public class ConfigurableParamsUtils {
                 ));
 
     }
+
+	private ConfigurableDto buildConfigurableDto(Object rawValue, Class<? extends Configurable> paramType)
+			throws IllegalAccessException, InvocationTargetException, InstantiationException {
+		ConfigurableDto dto = new ConfigurableDto();
+		BeanUtils.populate(dto, (Map<String, Object>) rawValue );
+		
+		Map<String, Object> innerParams = dto.getParams();
+		
+		Object sampleInstance = paramType.getConstructors()[0].newInstance();
+		Map<String, Object> extractedInnerParams = this.extractConfigParamRawValuesMap(innerParams, (Configurable) sampleInstance);
+		dto.setParams(extractedInnerParams);
+		return dto;
+	}
 
     public void resolveConfigurableTree(Configurable configurable, Map<String, Object> paramsWithConfigurables)
     {
@@ -245,7 +264,7 @@ public class ConfigurableParamsUtils {
 
         if(compatibleConverters.isEmpty())
         {
-            return paramType.cast(rawValue);
+            return ConvertUtils.convert(rawValue, paramType);
         }
 
         //IMPOSSIBLE TO DEFINE THE CONVERTER TO USE
