@@ -31,6 +31,19 @@ public class ConfigParamUtilsTest {
 			put("stringParam", "dummyStringParam");
 			put("floatParam", "3.5");
 			put("doubleParam", "4.6");
+			put("integerList", new ArrayList<Object>() {{
+				add(1);
+				add(4);
+				add("5");
+				add(7);
+			}});
+			put("doublesList", new ArrayList<Object>() {{
+				add(3);
+				add(9);
+				add("7");
+				add(7.8F);
+				add(4.5D);
+			}});
 			put("innerConfigurableParam", new HashMap<String, Object>() {{
 				
 				put("name", "dummy");
@@ -129,7 +142,24 @@ public class ConfigParamUtilsTest {
 		//-----------------------------------------------------------------------------------------
 		//END CHECKING INNER CONFIGURABLE
 		//-----------------------------------------------------------------------------------------
-				
+		
+		//-----------------------------------------------------------------------------------------
+		//CHECKING SIMPLE DATA LIST
+		//-----------------------------------------------------------------------------------------
+
+		Object integerListObject = extractedConfigParams.get("integerList");
+		assertTrue(List.class.isAssignableFrom(integerListObject.getClass()));
+		
+		List<Integer> integersList = (List<Integer>) integerListObject;
+		assertEquals( 1, integersList.get(0) );
+		assertEquals( 4, integersList.get(1) );
+		assertEquals( 5, integersList.get(2) );
+		assertEquals( 7, integersList.get(3) );
+		
+		//-----------------------------------------------------------------------------------------
+		//END CHECKING SIMPLE DATA LIST
+		//-----------------------------------------------------------------------------------------
+		
 		//-----------------------------------------------------------------------------------------
 		//CHECKING LIST OF INNER CONFIGURABLES
 		//-----------------------------------------------------------------------------------------

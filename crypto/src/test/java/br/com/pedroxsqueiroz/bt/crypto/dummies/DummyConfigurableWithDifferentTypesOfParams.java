@@ -28,12 +28,16 @@ public class DummyConfigurableWithDifferentTypesOfParams extends Configurable{
 	
 	@ConfigParam(name = "innerConfigurableParam")
 	public DummyConfigurableWithDifferentTypesOfParams innerConfigurableParam;
-//	
-//	@ConfigParam(name = "innerConfigurableParamFromDto")
-//	public DummyConfigurableWithDifferentTypesOfParams innerConfigurableParamFromDto;
-//	
+	
 	@ConfigParam(name = "innerConfigurableParamsList")
 	public List<DummyConfigurableWithDifferentTypesOfParams> innerConfigurableParams;
+	
+	@ConfigParam(name = "integerList")
+	public List<Integer> integersList;
+	
+	@ConfigParam(name = "doublesList")
+	public List<Double> integersDoubles;
+	
 	
 	@Delegate(types = Configurable.class)
 	private AnnotadedFieldsConfigurer<DummyConfigurableWithDifferentTypesOfParams> configurer = new AnnotadedFieldsConfigurer(this);

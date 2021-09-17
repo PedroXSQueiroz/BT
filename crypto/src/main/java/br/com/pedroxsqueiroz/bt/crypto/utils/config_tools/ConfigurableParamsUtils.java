@@ -52,87 +52,91 @@ public class ConfigurableParamsUtils {
                 .entrySet()
                 .stream()
                 .filter( entry -> rawValueMap.containsKey( entry.getKey() ) )
-                .map( configEntry -> {
-
-                    String currentConfigParamName = configEntry.getKey();
-
-                    //OBTAINS THE RAW VALUES RECEIVED TO PARAMETER FIELD
-                    Object rawValue = rawValueMap.get(currentConfigParamName);
-
-                    //OBTAINS TYPE OF PARAMETER FIELD
-                    Class<?> paramType = configEntry.getValue();
-
-                    if( Configurable.class.isAssignableFrom(paramType) &&
-                            Map.class.isAssignableFrom(rawValue.getClass()))
-                    {
-                    	try 
-                    	{
-                    		rawValue = buildConfigurableDto(rawValue, (Class<Configurable>) paramType);
-                    	} catch (IllegalAccessException | InvocationTargetException | InstantiationException | IllegalArgumentException | SecurityException e) {
-							LOGGER.log(Level.SEVERE, e.getMessage());
-						}
-                    }
-
-                    if( List.class.isAssignableFrom(paramType) )
-                    {
-                        List<Object> resolvedListValues = new ArrayList<Object>();
-                        Class<?> rawValueClass = rawValue.getClass();
-
-                        if( rawValueClass.isArray() || List.class.isAssignableFrom(rawValueClass)){
-
-                            Object[] rawValueIterator = rawValueClass.isArray() ?
-                                                            ( Object[] ) rawValue:
-                                                            ( (List<Object>) rawValue ).toArray();
-
-                            Type listGenericType = paramsToFields.get(currentConfigParamName).getGenericType();
-                            Class<?> listParamType = (Class<?>) ((ParameterizedType) listGenericType).getActualTypeArguments()[0];
-                            boolean listParamTypeIsConfigurable = Configurable.class.isAssignableFrom(listParamType);
-
-                            for( Object currentRawValue : rawValueIterator )
-                            {
-
-                                if( listParamTypeIsConfigurable &&
-                                        Map.class.isAssignableFrom(currentRawValue.getClass()))
-                                {
-
-                                    try 
-                                    {
-										currentRawValue = buildConfigurableDto(currentRawValue, (Class<Configurable>) listParamType);
-									} catch (IllegalAccessException | InvocationTargetException
-											| InstantiationException e) {
-										LOGGER.log(Level.SEVERE, e.getMessage());
-									}
-                                }
-
-                                resolvedListValues.add(
-                                    resolveParam(
-                                        paramsToFields.get(currentConfigParamName),
-                                        listParamType,
-                                        currentRawValue,
-                                        configurable
-                                    )
-                                );
-
-                            }
-
-                            return new AbstractMap.SimpleEntry<>( currentConfigParamName, resolvedListValues );
-                        }
-
-
-                    }
-
-                    Object paramResolved = resolveParam(
-                            paramsToFields.get(currentConfigParamName),
-                            paramType,
-                            rawValue,
-                            configurable);
-
-                    return new AbstractMap.SimpleEntry<>(currentConfigParamName, paramResolved);
-
-                })
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        Map.Entry::getValue
+                        configEntry -> {
+	                        String currentConfigParamName = configEntry.getKey();
+	
+	                        //OBTAINS THE RAW VALUES RECEIVED TO PARAMETER FIELD
+	                        Object rawValue = rawValueMap.get(currentConfigParamName);
+	
+	                        //OBTAINS TYPE OF PARAMETER FIELD
+	                        Class<?> paramType = configEntry.getValue();
+	
+	                        if( Configurable.class.isAssignableFrom(paramType) &&
+	                            Map.class.isAssignableFrom(rawValue.getClass()))
+	                        {
+	                        	try 
+	                        	{
+	                        		return buildConfigurableDto(rawValue, (Class<Configurable>) paramType);
+	                        	} catch (IllegalAccessException | InvocationTargetException | InstantiationException | IllegalArgumentException | SecurityException e) {
+	    							LOGGER.log(Level.SEVERE, e.getMessage());
+	    						}
+	                        }
+	
+	                        if( List.class.isAssignableFrom(paramType) )
+	                        {
+	                            List<Object> resolvedListValues = new ArrayList<Object>();
+	                            Class<?> rawValueClass = rawValue.getClass();
+	
+	                            if( rawValueClass.isArray() || List.class.isAssignableFrom(rawValueClass)){
+	
+	                                Object[] rawValueIterator = rawValueClass.isArray() ?
+	                                                                ( Object[] ) rawValue:
+	                                                                ( (List<Object>) rawValue ).toArray();
+	
+	                                Type listGenericType = paramsToFields.get(currentConfigParamName).getGenericType();
+	                                Class<?> listParamType = (Class<?>) ((ParameterizedType) listGenericType).getActualTypeArguments()[0];
+	                                boolean listParamTypeIsConfigurable = Configurable.class.isAssignableFrom(listParamType);
+	
+	                                for( Object currentRawValue : rawValueIterator )
+	                                {
+	
+	                                    if( listParamTypeIsConfigurable &&
+	                                            Map.class.isAssignableFrom(currentRawValue.getClass()))
+	                                    {
+	
+	                                        try 
+	                                        {
+	                                        	resolvedListValues.add( 
+	                                        			buildConfigurableDto(
+	                                        					currentRawValue, 
+	                                        					(Class<Configurable>) listParamType)
+	                                        			);
+	                                        
+	                                        } catch (IllegalAccessException | InvocationTargetException
+	    											| InstantiationException e) {
+	    										LOGGER.log(Level.SEVERE, e.getMessage());
+	    									}
+	                                    }
+	                                    else
+	                                    {
+	                                    	resolvedListValues.add(
+	                                    			resolveParam(
+	                                    					paramsToFields.get(currentConfigParamName),
+	                                    					listParamType,
+	                                    					currentRawValue,
+	                                    					configurable
+	                                    					)
+	                                    			);
+	                                    	
+	                                    }
+	
+	
+	                                }
+	
+	                                return resolvedListValues;
+	                            }
+	
+	
+	                        }
+	
+	                        return resolveParam(
+	                                paramsToFields.get(currentConfigParamName),
+	                                paramType,
+	                                rawValue,
+	                                configurable);                        
+                        }
                 ));
 
     }
@@ -276,6 +280,7 @@ public class ConfigurableParamsUtils {
 
         ParamConverter converter = compatibleConverters.get(0);
 
+        //FIXME: PROBABLY THIS SHOUD BE MOVED TO TREE CONSTRUCTION
         if( ParamsToConfigurableInstanceConverter.class.isAssignableFrom( converter.getClass() ) )
         {
             ParamsToConfigurableInstanceConverter configurableConverter = (ParamsToConfigurableInstanceConverter) converter;
@@ -323,14 +328,8 @@ public class ConfigurableParamsUtils {
 
                     try {
                         return converterClass.getConstructor().newInstance();
-                    } catch (InstantiationException e) {
-                        e.printStackTrace();
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    } catch (InvocationTargetException e) {
-                        e.printStackTrace();
-                    } catch (NoSuchMethodException e) {
-                        e.printStackTrace();
+                    } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                    	LOGGER.info(e.getMessage());
                     }
 
                     return null;

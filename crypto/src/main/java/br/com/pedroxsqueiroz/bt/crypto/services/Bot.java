@@ -197,9 +197,9 @@ public class Bot extends Configurable implements Startable, Stopable {
         this.isTesting = true;
 
         Wallet testWallet = new Wallet();
-        testWallet.putAmmountToStock( this.type, new BigDecimal(this.initialAmmount) );
+        testWallet.putAmmountToStock( this.type, BigDecimal.valueOf(this.initialAmmount) );
         Wallet comparingWallet = new Wallet();
-        comparingWallet.putAmmountToStock( this.type, new BigDecimal(this.initialAmmount) );
+        comparingWallet.putAmmountToStock( this.type, BigDecimal.valueOf(this.initialAmmount) );
 
         this.currentWallet = testWallet;
 
@@ -280,7 +280,7 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         BackTestResult backTestResult = new BackTestResult();
 
-        BigDecimal initialAmmountBD = new BigDecimal(this.initialAmmount);
+        BigDecimal initialAmmountBD = BigDecimal.valueOf(this.initialAmmount);
         BigDecimal initialValue = getExchangeValueFromCurrentSerialEntry(firstEntry).multiply( initialAmmountBD );
         backTestResult.setInitialAmmount(initialAmmountBD);
         backTestResult.setInitialValue(initialValue);
