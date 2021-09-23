@@ -117,7 +117,7 @@ public class ConfigurableParamsUtils {
 	                                    					listParamType,
 	                                    					currentRawValue,
 	                                    					configurable
-	                                    					)
+                                    					)
 	                                    			);
 	                                    	
 	                                    }

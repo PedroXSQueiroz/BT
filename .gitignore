@@ -4,6 +4,7 @@
 sonar/*
 */target/*
 */.idea/*
+*.db
 
 client/bt_client/.expo/web/*
 

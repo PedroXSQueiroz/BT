@@ -14,12 +14,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyConfigurableOfTreeLeaf;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyConfigurableOfTreeNode;
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyConfigurableOfTreeRoot;
 import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyConfigurableWithDifferentTypesOfParams;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ConfigParamUtilsTest {
 
+	private static final double DELTA = 1e-4;
+	
 	@Autowired
 	private ConfigurableParamsUtils configurableParamUtils;
 	
@@ -144,7 +149,7 @@ public class ConfigParamUtilsTest {
 		//-----------------------------------------------------------------------------------------
 		
 		//-----------------------------------------------------------------------------------------
-		//CHECKING SIMPLE DATA LIST
+		//CHECKING SIMPLE INTEGER DATA LIST
 		//-----------------------------------------------------------------------------------------
 
 		Object integerListObject = extractedConfigParams.get("integerList");
@@ -159,6 +164,26 @@ public class ConfigParamUtilsTest {
 		//-----------------------------------------------------------------------------------------
 		//END CHECKING SIMPLE DATA LIST
 		//-----------------------------------------------------------------------------------------
+		
+		//-----------------------------------------------------------------------------------------
+		//CHECKING SIMPLE DOUBLE DATA LIST
+		//-----------------------------------------------------------------------------------------
+
+		Object doubleListObject = extractedConfigParams.get("doublesList");
+		assertTrue(List.class.isAssignableFrom(doubleListObject.getClass()));
+		
+		List<Double> doubleList = (List<Double>) doubleListObject;
+		assertEquals( 3D, doubleList.get(0), DELTA );
+		assertEquals( 9D, doubleList.get(1), DELTA );
+		assertEquals( 7D, doubleList.get(2), DELTA );
+		assertEquals( 7.8D, doubleList.get(3), DELTA );
+		assertEquals( 4.5D, doubleList.get(4), DELTA );
+		
+		//-----------------------------------------------------------------------------------------
+		//END CHECKING SIMPLE DATA LIST
+		//-----------------------------------------------------------------------------------------
+
+		
 		
 		//-----------------------------------------------------------------------------------------
 		//CHECKING LIST OF INNER CONFIGURABLES
@@ -210,7 +235,27 @@ public class ConfigParamUtilsTest {
 		//-----------------------------------------------------------------------------------------
 		//END CHECKING LIST OF INNER CONFIGURABLES
 		//-----------------------------------------------------------------------------------------
-						
 		
 	}
+	
+	@Test
+	public void shouldBuildTreeOfConfigurables() 
+	{
+		DummyConfigurableOfTreeRoot root = new DummyConfigurableOfTreeRoot();
+		DummyConfigurableOfTreeNode node = new DummyConfigurableOfTreeNode();
+		DummyConfigurableOfTreeLeaf leaf = new DummyConfigurableOfTreeLeaf();
+		
+		root.setRootParam(2);
+		node.setNodeParam(5);
+		
+		root.setNode(node);
+		node.setLeaf(leaf);
+		
+		this.configurableParamUtils.resolveConfigurableTree(root, new HashMap<String, Object>());
+		
+		assertEquals(2, node.getDataFromRoot());
+		assertEquals(5, leaf.getDataFromNode());
+		
+	}
+	
 }
