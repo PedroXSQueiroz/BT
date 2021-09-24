@@ -48,7 +48,7 @@ public class BotService {
 
         bot.config(resolvedBotParams);
 
-        this.configurableParamsUtils.resolveConfigurableTree(bot, bot.getCurrentConfiguration());
+        this.configurableParamsUtils.resolveConfigurableTree(bot, null);
 
         return bot;
     }

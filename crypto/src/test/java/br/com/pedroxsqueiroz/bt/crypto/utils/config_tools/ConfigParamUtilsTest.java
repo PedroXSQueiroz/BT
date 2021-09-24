@@ -251,7 +251,7 @@ public class ConfigParamUtilsTest {
 		root.setNode(node);
 		node.setLeaf(leaf);
 		
-		this.configurableParamUtils.resolveConfigurableTree(root, new HashMap<String, Object>());
+		this.configurableParamUtils.resolveConfigurableTree(root, null);
 		
 		assertEquals(2, node.getDataFromRoot());
 		assertEquals(5, leaf.getDataFromNode());

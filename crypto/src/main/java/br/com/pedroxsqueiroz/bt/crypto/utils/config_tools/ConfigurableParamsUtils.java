@@ -2,6 +2,7 @@ package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
+import br.com.pedroxsqueiroz.bt.crypto.exceptions.ConfigParamNotFoundException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ParamsToConfigurableInstanceConverter;
 import io.github.classgraph.ClassGraph;
 
@@ -63,8 +64,10 @@ public class ConfigurableParamsUtils {
 	                        //OBTAINS TYPE OF PARAMETER FIELD
 	                        Class<?> paramType = configEntry.getValue();
 	
-	                        if( Configurable.class.isAssignableFrom(paramType) &&
-	                            Map.class.isAssignableFrom(rawValue.getClass()))
+	                        if	( 
+	                        		Configurable.class.isAssignableFrom(paramType) &&
+	                        		Map.class.isAssignableFrom(rawValue.getClass())
+                        		)
 	                        {
 	                        	try 
 	                        	{
@@ -154,98 +157,53 @@ public class ConfigurableParamsUtils {
 		return dto;
 	}
 
-    public void resolveConfigurableTree(Configurable configurable, Map<String, Object> paramsWithConfigurables)
+    public void resolveConfigurableTree(Configurable configurable, Configurable parent)
     {
+    	
+    	
+    	FieldUtils
+				.getFieldsListWithAnnotation( configurable.getClass(), ConfigParam.class )
+				.forEach( field -> {
+					
+					try {
+						
+						Object fieldValue = field.get(configurable);
+						
+						if(Objects.nonNull(fieldValue)) 
+						{
+							Class<? extends Object> fieldValueClass = fieldValue.getClass();
+							
+							if(Configurable.class.isAssignableFrom(fieldValueClass)) 
+							{
+								
+								this.resolveConfigurableTree((Configurable) fieldValue, configurable);
+							}
+							
+						}
 
-        FieldUtils
-                .getFieldsListWithAnnotation( configurable.getClass(), ConfigParam.class )
-                .stream()
-                /*
-                .filter( field -> {
-
-                    Class<?> fieldType = field.getType();
-
-                    if( Configurable.class.isAssignableFrom(fieldType) )
-                    {
-                        return true;
-                    }
-                    else if( List.class.isAssignableFrom(fieldType) )
-                    {
-                        Class<?> listClass = (Class<?>) ( (ParameterizedType) field.getGenericType() ).getActualTypeArguments()[0];
-                        return Configurable.class.isAssignableFrom(listClass);
-                    }
-
-                    return false;
-
-                })
-                */
-
-                .forEach( field -> {
-
-                    String name = field.getAnnotation(ConfigParam.class).name();
-
-                    Object inner = paramsWithConfigurables.get(name);
-
-                    if( Objects.isNull( inner ) )
-                    {
-                        LOGGER.info( "Param " + name + " is null, will be ignored" );
-                        return;
-                    }
-
-                    if( Configurable.class.isAssignableFrom( inner.getClass() ) )
-                    {
-
-                        Configurable innerConfigurable = (Configurable) inner;
-
-                        if( Objects.nonNull( innerConfigurable ) )
-                        {
-                            innerConfigurable.setParent(configurable);
-                            resolveConfigurableTree( innerConfigurable, innerConfigurable.getCurrentConfiguration() );
-                        }
-
-                    }
-                    else if( List.class.isAssignableFrom( inner.getClass() ) )
-                    {
-
-                        List<?> innerList = (List<?>) inner;
-
-                        for( Object innerListItem : innerList )
-                        {
-
-                            if( Configurable.class.isAssignableFrom( innerListItem.getClass() ) )
-                            {
-                                Configurable currentInnerConfigurable =  (Configurable) innerListItem;
-
-                                currentInnerConfigurable.setParent(configurable);
-                                resolveConfigurableTree( currentInnerConfigurable, currentInnerConfigurable.getCurrentConfiguration() );
-                            }
-
-                        }
-
-                        /*
-                        Class<?> listClass = (Class<?>) ( (ParameterizedType) field.getGenericType() ).getActualTypeArguments()[0];
-                        boolean isListOfConfigurables = Configurable.class.isAssignableFrom(listClass);
-
-
-
-                        if(isListOfConfigurables)
-                        {
-                            List<? extends Configurable> innerConfigurables = (List<? extends Configurable>) inner;
-
-                            for(Configurable currentInnerConfigurable : innerConfigurables)
-                            {
-                                currentInnerConfigurable.setParent(configurable);
-                                resolveConfigurableTree( currentInnerConfigurable, currentInnerConfigurable.getCurrentConfiguration() );
-                            }
-
-                        }
-                        */
-
-                    }
-
-
-
-                });
+						if(Objects.nonNull(parent)) 
+						{
+							
+							ConfigParam configData = field.getAnnotation(ConfigParam.class);
+							
+							if ( configData.getFromParent() ) 
+							{
+								Object valueFromParent = parent.getConfigParamValue(configData.name());
+								field.set(configurable, valueFromParent);
+							}
+							
+						}							
+						
+						
+					} catch (
+								IllegalArgumentException 
+							| 	IllegalAccessException 
+							| 	ConfigParamNotFoundException e) 
+					{
+						LOGGER.info(e.getMessage());
+					}
+					
+				});
 
     }
 
