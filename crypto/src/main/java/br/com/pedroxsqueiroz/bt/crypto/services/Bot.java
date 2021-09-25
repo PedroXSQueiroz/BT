@@ -108,6 +108,11 @@ public class Bot extends Configurable implements Startable, Stopable {
 
         this.openTradeListerners.add(listener);
     }
+    
+    public List<OpenTradeListenerCallback> getOpenTradeListeners()
+    {
+    	return this.openTradeListerners;
+    }
 
     @ConfigParamConverter( converters = NameToCloseTradeListenerCallbackConverter.class)
     @ConfigParam(name = "closeTradeListerners")
@@ -121,6 +126,11 @@ public class Bot extends Configurable implements Startable, Stopable {
         }
 
         this.closeTradeListerners.add(listener);
+    }
+    
+    public List<CloseTradeListenerCallback> getCloseTradeListeners()
+    {
+    	return this.closeTradeListerners;
     }
 
     @ConfigParamConverter( converters = {
@@ -173,6 +183,11 @@ public class Bot extends Configurable implements Startable, Stopable {
         }
 
         this.seriesUpdateListeners.add(listener);
+    }
+    
+    public List<SeriesUpdateListenerCallback> getSeriesUpateListeners()
+    {
+    	return this.seriesUpdateListeners;
     }
 
     @Override

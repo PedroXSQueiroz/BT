@@ -1,9 +1,7 @@
 package br.com.pedroxsqueiroz.bt.crypto.services;
 
-import br.com.pedroxsqueiroz.bt.crypto.constants.TradeMovementTypeEnum;
+
 import br.com.pedroxsqueiroz.bt.crypto.controllers.BotController;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.ResultSerialEntryDto;
-import br.com.pedroxsqueiroz.bt.crypto.dtos.SerialEntry;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStartException;
 import br.com.pedroxsqueiroz.bt.crypto.exceptions.ImpossibleToStopException;
 import br.com.pedroxsqueiroz.bt.crypto.models.BotModel;
@@ -13,9 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 @Service
@@ -47,8 +42,6 @@ public class BotService {
                 .extractConfigParamRawValuesMap(botParamsDto, bot);
 
         bot.config(resolvedBotParams);
-
-        this.configurableParamsUtils.resolveConfigurableTree(bot, null);
 
         return bot;
     }

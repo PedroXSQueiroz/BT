@@ -16,14 +16,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Array;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("bot")
 public class BotController {
-
-    private static Logger LOGGER = Logger.getLogger( BotController.class.getName() );
 
     @Autowired
     private BotService botService;
@@ -34,8 +31,7 @@ public class BotController {
     @PostMapping("/backtest")
     @ResponseBody
     public ResponseEntity<?> runBackTest(@RequestBody Map<String, Object> botParamsDto)
-            throws  ImpossibleToStartException,
-                    InterruptedException {
+            throws  ImpossibleToStartException {
 
         this.addDBCallbacksToParams(botParamsDto);
 
@@ -65,40 +61,45 @@ public class BotController {
 
         return new ResponseEntity(botId, HttpStatus.OK);
     }
+    
+    private static final String DTO_FIELD_KEY_OPEN_TRADE_LISTENER = "openTradeListener";
+    private static final String DTO_FIELD_KEY_CLOSE_TRADE_LISTENERS = "closeTradeListerners";
+    private static final String DTO_FIELD_KEY_UPDATE_LISTENERS = "seriesUpdateListeners";
 
     private void addDBCallbacksToParams(Map<String, Object> botParamsDto) {
-        String[] defaultOpenTradeListener = {"dbOpenTradeCallback"};
-        botParamsDto.put("openTradeListener",
-                botParamsDto.containsKey("openTradeListener") ?
+        
+    	String[] defaultOpenTradeListener = {"dbOpenTradeCallback"};
+		botParamsDto.put(DTO_FIELD_KEY_OPEN_TRADE_LISTENER,
+                botParamsDto.containsKey(DTO_FIELD_KEY_OPEN_TRADE_LISTENER) ?
                     Stream
                         .concat(
-                            ( (List<Object>) botParamsDto.get("openTradeListener") ).stream(),
+                            ( (List<Object>) botParamsDto.get(DTO_FIELD_KEY_OPEN_TRADE_LISTENER) ).stream(),
                             Arrays.stream(defaultOpenTradeListener)
                         ).toArray(size -> (Object[]) Array.newInstance( Object.class, size )):
                         defaultOpenTradeListener);
 
-        String[] defaultCloseTradeListener = {"dbCloseTradeCallback"};
-        botParamsDto.put("closeTradeListerners",
-
-                botParamsDto.containsKey("closeTradeListerners") ?
+        
+		String[] defaultCloseTradeListener = {"dbCloseTradeCallback"};
+		botParamsDto.put(DTO_FIELD_KEY_CLOSE_TRADE_LISTENERS,
+                botParamsDto.containsKey(DTO_FIELD_KEY_CLOSE_TRADE_LISTENERS) ?
                         Stream
                             .concat(
-                                ( (List<Object>) botParamsDto.get("closeTradeListerners") ).stream(),
+                                ( (List<Object>) botParamsDto.get(DTO_FIELD_KEY_CLOSE_TRADE_LISTENERS) ).stream(),
                                 Arrays.stream(defaultCloseTradeListener)
                             ).toArray(size -> (Object[]) Array.newInstance( Object.class, size )):
                         defaultCloseTradeListener);
 
 
         String[] defaultUpdateSeriesListener = {"dbUpdateSeriesCallback"};
-        Object[] updateSeriesListener = botParamsDto.containsKey("seriesUpdateListeners") ?
+		Object[] updateSeriesListener = botParamsDto.containsKey(DTO_FIELD_KEY_UPDATE_LISTENERS) ?
                 Stream
                         .concat(
-                                ( (List<Object>) botParamsDto.get("seriesUpdateListeners") ).stream(),
+                                ( (List<Object>) botParamsDto.get(DTO_FIELD_KEY_UPDATE_LISTENERS) ).stream(),
                                 Arrays.stream((Object[]) defaultUpdateSeriesListener)
                         ).toArray(size -> (Object[]) Array.newInstance(Object.class, size)) :
                 defaultUpdateSeriesListener;
 
-        botParamsDto.put("seriesUpdateListeners", updateSeriesListener);
+        botParamsDto.put(DTO_FIELD_KEY_UPDATE_LISTENERS, updateSeriesListener);
     }
 
     @Autowired

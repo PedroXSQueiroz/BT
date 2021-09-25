@@ -2,7 +2,6 @@ package br.com.pedroxsqueiroz.bt.crypto.utils.config_tools;
 
 
 import br.com.pedroxsqueiroz.bt.crypto.dtos.ConfigurableDto;
-import br.com.pedroxsqueiroz.bt.crypto.exceptions.ConfigParamNotFoundException;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.param_converters.ParamsToConfigurableInstanceConverter;
 import io.github.classgraph.ClassGraph;
 
@@ -27,18 +26,18 @@ import java.util.stream.Collectors;
 @Component
 public class ConfigurableParamsUtils {
 
-    private static Logger LOGGER = Logger.getLogger( ConfigurableParamsUtils.class.getName() );
+    private static final Logger LOGGER = Logger.getLogger( ConfigurableParamsUtils.class.getName() );
     
     @NotNull
     private Map<String, Field> getParamsToFields(Class<? extends Configurable> configurableClass) {
-        Map<String, Field> paramsToFields = FieldUtils
-                                                .getFieldsListWithAnnotation(configurableClass, ConfigParam.class)
-                                                .stream()
-                                                .collect(Collectors.toMap(
-                                                        annotatedField -> annotatedField.getAnnotation(ConfigParam.class).name(),
-                                                        annotatedField -> annotatedField
-                                                ));
-        return paramsToFields;
+        return FieldUtils
+	                .getFieldsListWithAnnotation(configurableClass, ConfigParam.class)
+	                .stream()
+	                .collect(Collectors.toMap(
+	                        annotatedField -> annotatedField.getAnnotation(ConfigParam.class).name(),
+	                        annotatedField -> annotatedField
+	                ));
+
     }
 
     public Map<String, Object> extractConfigParamRawValuesMap(Map<String, Object> rawValueMap, Configurable configurable )
@@ -157,56 +156,6 @@ public class ConfigurableParamsUtils {
 		return dto;
 	}
 
-    public void resolveConfigurableTree(Configurable configurable, Configurable parent)
-    {
-    	
-    	
-    	FieldUtils
-				.getFieldsListWithAnnotation( configurable.getClass(), ConfigParam.class )
-				.forEach( field -> {
-					
-					try {
-						
-						Object fieldValue = field.get(configurable);
-						
-						if(Objects.nonNull(fieldValue)) 
-						{
-							Class<? extends Object> fieldValueClass = fieldValue.getClass();
-							
-							if(Configurable.class.isAssignableFrom(fieldValueClass)) 
-							{
-								
-								this.resolveConfigurableTree((Configurable) fieldValue, configurable);
-							}
-							
-						}
-
-						if(Objects.nonNull(parent)) 
-						{
-							
-							ConfigParam configData = field.getAnnotation(ConfigParam.class);
-							
-							if ( configData.getFromParent() ) 
-							{
-								Object valueFromParent = parent.getConfigParamValue(configData.name());
-								field.set(configurable, valueFromParent);
-							}
-							
-						}							
-						
-						
-					} catch (
-								IllegalArgumentException 
-							| 	IllegalAccessException 
-							| 	ConfigParamNotFoundException e) 
-					{
-						LOGGER.info(e.getMessage());
-					}
-					
-				});
-
-    }
-
     @Autowired(required = false)
     public void setConvertersBeans(Set<ParamConverter> convertersBeans)
     {
@@ -255,7 +204,7 @@ public class ConfigurableParamsUtils {
 
         if(Objects.isNull(converterAnnotation))
         {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
         //TRY FIND THE COMPATIBLE CONVERTER TO RECEIVED AND THE FIELD
@@ -263,10 +212,10 @@ public class ConfigurableParamsUtils {
 
         if(Objects.isNull(converters))
         {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
-        List<? extends ParamConverter> compatibleConverters = converters
+        return converters
                 .stream()
                 .map(converterClass -> {
 
@@ -300,7 +249,6 @@ public class ConfigurableParamsUtils {
                         }
                 )
                 .collect(Collectors.toList());
-        return compatibleConverters;
     }
 
     public <T> Class<? extends T>  resolveConcreteClassOfParam(String alias, Class<T> superClass)
@@ -334,7 +282,7 @@ public class ConfigurableParamsUtils {
                         try {
                             foundedClass = (Class<? extends T>) ClassUtils.getClass(clazzInfo.getName());
                         } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
+                            LOGGER.info(e.getMessage());
                         }
 
                         return foundedClass;
@@ -350,5 +298,46 @@ public class ConfigurableParamsUtils {
         
         return null;
 
+    }
+    
+    public static void resolveInverseDependecies( Configurable parent, Configurable inner )
+    {
+        FieldUtils
+                .getFieldsListWithAnnotation( inner.getClass(), ConfigParam.class )
+                .forEach( field -> {
+
+                    if( Configurable.class.isAssignableFrom( field.getType() ) )
+                    {
+
+                        try {
+                            resolveInverseDependecies( inner, (Configurable) field.get(inner));
+                        } catch (IllegalAccessException e) {
+                            LOGGER.log(Level.WARNING, e.getMessage());
+                        }
+
+                    }
+
+                    String fieldName = field.getAnnotation( ConfigParam.class ).name();
+
+                    Optional<Field> parentFieldFound = FieldUtils
+                            .getFieldsListWithAnnotation(parent.getClass(), ConfigParam.class)
+                            .stream()
+                            .filter(parentField -> parentField.getAnnotation(ConfigParam.class).name().contentEquals(fieldName))
+                            .findAny();
+
+                    if(parentFieldFound.isPresent())
+                    {
+                        try {
+                            Field parentField = parentFieldFound.get();
+                            Object parentFieldValue = parentField.get(parent);
+                            field.set( inner, parentFieldValue );
+
+                        } catch (IllegalAccessException e) {
+                        	LOGGER.log(Level.WARNING, e.getMessage());
+                        }
+
+                    }
+
+                });
     }
 }

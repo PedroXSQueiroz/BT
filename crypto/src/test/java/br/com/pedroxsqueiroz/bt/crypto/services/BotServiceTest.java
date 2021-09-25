@@ -9,7 +9,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.BeforeClass;
@@ -23,7 +25,9 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.event.annotation.BeforeTestClass;
 
+import br.com.pedroxsqueiroz.bt.crypto.dummies.DummyMarketFacade;
 import br.com.pedroxsqueiroz.bt.crypto.utils.config_tools.ConfigurableParamsUtils;
+import ch.qos.logback.core.util.CloseUtil;
 
 @SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -45,7 +49,7 @@ public class BotServiceTest {
 															.toInstant();
 	
 	@Mock
-	private MarketFacade marketFacade;
+	private DummyMarketFacade marketFacade;
 	
 	@Mock
 	private TradeAlgorithm algorihtm;
@@ -61,6 +65,15 @@ public class BotServiceTest {
 	
 	@Mock
 	private ConfigurableParamsUtils paramsUtils;
+	
+	@Mock
+	private OpenTradeListenerCallback mockOpenTradeListenerCallback;
+	
+	@Mock
+	private SeriesUpdateListenerCallback mockUpdateListeberCallback;
+	
+	@Mock
+	private CloseTradeListenerCallback mockCloseListenerCallback;
 	
 	@InjectMocks
 	private BotService botService;
@@ -80,6 +93,16 @@ public class BotServiceTest {
 				put("startInterval", START_INTERVAL_DATETIME);
 				put("endInterval", FINAL_INTERVAL_DATETIME);
 				put("intervalEntriesUnit", ChronoUnit.MINUTES);
+				put("openTradeListener", new ArrayList<OpenTradeListenerCallback>() {{
+					add(mockOpenTradeListenerCallback);
+				}});
+				put("seriesUpdateListeners", new ArrayList<SeriesUpdateListenerCallback>() {{
+					add(mockUpdateListeberCallback);
+				}});
+				put("closeTradeListerners", new ArrayList<CloseTradeListenerCallback>() {{
+					add(mockCloseListenerCallback);
+				}});
+				
 			}})
 			.when(this.paramsUtils)
 			.extractConfigParamRawValuesMap(Mockito.anyMap(), Mockito.any());
@@ -107,6 +130,19 @@ public class BotServiceTest {
 			put("exitAmmountGetter", new HashMap<String, Object>() {{
 				put("name", "dummy");
 			}});
+			
+			put("openTradeListener", new ArrayList() {{
+				add("db");
+			}});
+			
+			put("seriesUpdateListeners", new ArrayList() {{
+				add("db");
+			}});
+			
+			put("closeTradeListerners", new ArrayList() {{
+				add("db");
+			}});
+			
 			put("startInterval", START_INTERVAL);
 			put("endInterval", FINAL_INTERVAL);
 			put("intervalEntriesUnit", "m");
@@ -117,6 +153,7 @@ public class BotServiceTest {
 	public void shouldCreateByParams()
 	{
 		Map<String, Object> dummyParameters = this.getDummyParameters();
+		
 		Bot bot = this.botService.create(dummyParameters);
 		
 		assertEquals("dummy", bot.name);
@@ -128,6 +165,20 @@ public class BotServiceTest {
 		assertEquals(START_INTERVAL_DATETIME, bot.startInterval);
 		assertEquals(FINAL_INTERVAL_DATETIME, bot.endInterval);
 		assertEquals(ChronoUnit.MINUTES, bot.intervalEntriesUnit);
+		assertEquals(bot.intervalEntriesUnit, ( (DummyMarketFacade) bot.marketFacade ).unit );
+		
+		List<OpenTradeListenerCallback> openTradeListeners = bot.getOpenTradeListeners();
+		assertEquals(1, openTradeListeners.size());
+		assertEquals(this.mockOpenTradeListenerCallback, openTradeListeners.get(0));
+		
+		List<SeriesUpdateListenerCallback> updateTradeListeners = bot.getSeriesUpateListeners();
+		assertEquals(1, updateTradeListeners.size());
+		assertEquals(this.mockUpdateListeberCallback, updateTradeListeners.get(0));
+		
+		List<CloseTradeListenerCallback> closeTradeListeners = bot.getCloseTradeListeners();
+		assertEquals(1, closeTradeListeners.size());
+		assertEquals(this.mockCloseListenerCallback, closeTradeListeners.get(0));
+		
 	}
-	
+		
 }

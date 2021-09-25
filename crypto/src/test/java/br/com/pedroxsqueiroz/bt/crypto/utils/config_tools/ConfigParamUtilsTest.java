@@ -239,7 +239,7 @@ public class ConfigParamUtilsTest {
 	}
 	
 	@Test
-	public void shouldBuildTreeOfConfigurables() 
+	public void shouldResolve() 
 	{
 		DummyConfigurableOfTreeRoot root = new DummyConfigurableOfTreeRoot();
 		DummyConfigurableOfTreeNode node = new DummyConfigurableOfTreeNode();
@@ -251,7 +251,7 @@ public class ConfigParamUtilsTest {
 		root.setNode(node);
 		node.setLeaf(leaf);
 		
-		this.configurableParamUtils.resolveConfigurableTree(root, null);
+		ConfigurableParamsUtils.resolveInverseDependecies(root, node);
 		
 		assertEquals(2, node.getDataFromRoot());
 		assertEquals(5, leaf.getDataFromNode());

@@ -7,7 +7,6 @@ import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -21,49 +20,6 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
     public AnnotadedFieldsConfigurer(T target)
     {
         this.target = target;
-    }
-
-    public void resolveInverseDependecies( Configurable parent, Configurable inner )
-    {
-        FieldUtils
-                .getFieldsListWithAnnotation( inner.getClass(), ConfigParam.class )
-                .stream()
-                .filter( field -> field.getAnnotation( ConfigParam.class ).getFromParent() )
-                .forEach( field -> {
-
-                    if( Configurable.class.isAssignableFrom( field.getType() ) )
-                    {
-
-                        try {
-                            resolveInverseDependecies( inner, (Configurable) field.get(inner));
-                        } catch (IllegalAccessException e) {
-                            LOGGER.log(Level.WARNING, e.getMessage());
-                        }
-
-                    }
-
-                    String fieldName = field.getAnnotation( ConfigParam.class ).name();
-
-                    Optional<Field> parentFieldFound = FieldUtils
-                            .getFieldsListWithAnnotation(parent.getClass(), ConfigParam.class)
-                            .stream()
-                            .filter(parentField -> parentField.getAnnotation(ConfigParam.class).name().contentEquals(fieldName))
-                            .findAny();
-
-                    if(parentFieldFound.isPresent())
-                    {
-                        try {
-                            Field parentField = parentFieldFound.get();
-                            Object parentFieldValue = parentField.get(parent);
-                            field.set( inner, parentFieldValue );
-
-                        } catch (IllegalAccessException e) {
-                        	LOGGER.log(Level.WARNING, e.getMessage());
-                        }
-
-                    }
-
-                });
     }
 
     @Override
@@ -115,7 +71,7 @@ public class AnnotadedFieldsConfigurer<T extends Configurable> extends Configura
                 .values()
                 .stream()
                 .filter( value -> value instanceof Configurable )
-                .forEach( value -> this.resolveInverseDependecies( this.target, (Configurable) value ) );
+                .forEach( value -> ConfigurableParamsUtils.resolveInverseDependecies( this.target, (Configurable) value ) );
 
     }
 
